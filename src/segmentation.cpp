@@ -143,7 +143,7 @@ namespace perception {
 		  object_pub_(object_pub) {}
 
 	void Segmenter::paramsCallback(perception::SegmentationConfig &config, uint32_t level) {
-		ROS_INFO("Reconfigure Request: %d %s %d %d %d %d %d",
+		ROS_INFO("Reconfigure Request: %f %s %f %f %f %f %f",
 				 config.distance_threshold,
 				 config.axis, config.epsilon_angle,
 				 config.distance_above_plane,

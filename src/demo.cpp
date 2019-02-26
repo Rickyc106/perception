@@ -3,15 +3,11 @@
 #include "visualization_msgs/Marker.h"
 #include "perception/crop.h"
 #include "perception/segmentation.h"
+#include "perception/SegmentationConfig.h"
+#include "dynamic_reconfigure/server.h"
 
 int main(int argc, char** argv) {
 	ros::init(argc, argv, "Point Cloud Demo");
-
-	dynamic_reconfigure::Server<perception::SegmentationConfig> server;
-	dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;
-
-	f = boost::bind(&Segmenter::paramsCallback, _1, _2);
-	server.setCallback(f)
 
 	ros::NodeHandle nh;
 
@@ -26,6 +22,12 @@ int main(int argc, char** argv) {
 
 	ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", 1, 
 					&perception::Segmenter::Callback, &segmenter);
+
+	dynamic_reconfigure::Server<perception::SegmentationConfig> server;
+	dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;
+
+	f = boost::bind(&perception::Segmenter::paramsCallback, &segmenter, _1, _2);
+	server.setCallback(f);
 
 	ros::spin();
 	return 0;

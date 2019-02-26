@@ -6,6 +6,8 @@
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
 
+#include "perception/SegmentationConfig.h"
+
 namespace perception {
 	// Finds the largest horizontal surface in the given point cloud.
 	// This is useful for adding a collision object to MoveIt.
