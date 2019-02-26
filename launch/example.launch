@@ -1,0 +1,23 @@
+<launch>
+	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch"/>
+	
+	<node name="example_demo" pkg="perception" type="demo" output="screen">
+		<param name="distance_threshold" value="0.1"/>
+		<param name="axis" value="Z"/>
+		<param name="epsilon_angle" value="25.0"/>
+		<param name="distance_above_plane" value="0.005"/>
+		<param name="cluster_tolerance" value="0.01"/>
+		<param name="min_cluster_size" value="10"/>
+		<param name="max_cluster_size" value="10000"/>
+	</node>
+	
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find my_pcl_tutorial)/rviz/example.rviz">
+	</node>
+	
+	<!--node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0 0.707 0 0 -0.707 map camera_color_optical_frame 100">
+	</node-->
+
+	<!--node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0
+		0 0 0 1 map camera_color_optical_frame 100">
+	</node-->
+</launch>
