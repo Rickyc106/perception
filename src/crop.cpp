@@ -39,12 +39,21 @@ namespace perception {
 		PointCloudC::Ptr cropped_cloud(new PointCloudC());
 		//SetParams();
 
+/*
 		ros::param::param("crop_min_x", min_x, 0.3);
 		ros::param::param("crop_min_y", min_y, -1.0);
 		ros::param::param("crop_min_z", min_z, 0.5);
 		ros::param::param("crop_max_x", max_x, 0.9);
 		ros::param::param("crop_max_y", max_y, 1.0);
 		ros::param::param("crop_max_z", max_z, 1.5);
+*/
+
+		ros::param::get("crop_min_x", min_x);
+		ros::param::get("crop_min_y", min_y);
+		ros::param::get("crop_min_z", min_z);
+		ros::param::get("crop_max_x", max_x);
+		ros::param::get("crop_max_y", max_y);
+		ros::param::get("crop_max_z", max_z);
 
 		ROS_INFO("Min x: %f", min_x);
 

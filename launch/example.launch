@@ -1,7 +1,7 @@
 <launch>
 	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch"/>
 	
-	<node name="example_demo" pkg="perception" type="demo" output="screen">
+	<node name="perception" pkg="perception" type="demo" output="screen">
 		<param name="distance_threshold" value="0.1"/>
 		<param name="axis" value="Z"/>
 		<param name="epsilon_angle" value="25.0"/>

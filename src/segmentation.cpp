@@ -37,9 +37,9 @@ namespace perception {
 
 		double distance_above_plane;
 
-		ros::param::get("/example_demo/distance_threshold", distance_threshold);
-		ros::param::get("/example_demo/axis", axis_param);
-		ros::param::get("/example_demo/epsilon_angle", epsilon_angle);
+		ros::param::get("/perception/distance_threshold", distance_threshold);
+		ros::param::get("/perception/axis", axis_param);
+		ros::param::get("/perception/epsilon_angle", epsilon_angle);
 		
 		ros::param::get("/distance_above_plane", distance_above_plane);
 	
@@ -55,11 +55,13 @@ namespace perception {
 		seg.setDistanceThreshold(distance_threshold);
 		seg.setInputCloud(cloud);
 
+		seg.setMaxIterations(500); // Default is 50
+
 		Eigen::Vector3f axis;
 
-		if (axis_param == "X") axis << 1, 0, 0;
-		else if (axis_param == "Y") axis << 0, 1, 0;
-		else if (axis_param == "Z") axis << 0, 0, 1;
+		if (axis_param == "X" || axis_param == "x") axis << 1.0, 0, 0;
+		else if (axis_param == "Y" || axis_param == "y") axis << 0, 1.0, 0;
+		else if (axis_param == "Z" || axis_param == "z") axis << 0, 0, 1.0;
 
 		seg.setAxis(axis);
 		seg.setEpsAngle(pcl::deg2rad(epsilon_angle));
@@ -97,14 +99,16 @@ namespace perception {
 		Eigen::Vector4f min_pt, max_pt;
 		pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
-		pose->position.x = (max_pt.x() + min_pt.x()) / 2;
-		pose->position.y = (max_pt.y() + min_pt.y()) / 2;
-		pose->position.z = (max_pt.z() + min_pt.z()) / 2;
+		pose->position.x = (max_pt.z() + min_pt.z()) / 2;
+		pose->position.y = (max_pt.x() + min_pt.x()) / 2;
+		pose->position.z = (max_pt.y() + min_pt.y()) / 2;
 		pose->orientation.w = 1;
 
-		scale->x = max_pt.x() - min_pt.x();
-		scale->y = max_pt.y() - min_pt.y();
-		scale->z = max_pt.z() - min_pt.z();
+		scale->x = max_pt.z() - min_pt.z();
+		scale->y = max_pt.x() - min_pt.x();
+		scale->z = max_pt.y() - min_pt.y();
+
+		ROS_INFO("Position: %f %f %f", min_pt.x(), min_pt.y(), min_pt.z());
 	}
 
 	void SegmentSurfaceObjects(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
@@ -119,9 +123,9 @@ namespace perception {
 		double cluster_tolerance;
 		int min_cluster_size, max_cluster_size;
 
-		ros::param::get("cluster_tolerance", cluster_tolerance);
-		ros::param::get("min_cluster_size", min_cluster_size);
-		ros::param::get("max_cluster_size", max_cluster_size);
+		ros::param::get("/perception/cluster_tolerance", cluster_tolerance);
+		ros::param::get("/perception/min_cluster_size", min_cluster_size);
+		ros::param::get("/perception/max_cluster_size", max_cluster_size);
 
 		pcl::EuclideanClusterExtraction<PointC> euclid;
 		euclid.setInputCloud(cloud);
