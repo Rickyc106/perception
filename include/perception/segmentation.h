@@ -7,6 +7,7 @@
 #include "geometry_msgs/Vector3.h"
 
 #include "perception/SegmentationConfig.h"
+#include "dynamic_reconfigure/server.h"
 
 namespace perception {
 	// Finds the largest horizontal surface in the given point cloud.
@@ -49,5 +50,8 @@ namespace perception {
 			ros::Publisher surface_points_pub_;
 			ros::Publisher marker_pub_;
 			ros::Publisher object_pub_;
+
+			dynamic_reconfigure::Server<perception::SegmentationConfig> server;
+			dynamic_reconfigure::Server<perception::SegmentationConfig> f;
 	};
 }

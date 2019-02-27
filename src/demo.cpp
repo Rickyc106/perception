@@ -22,12 +22,19 @@ int main(int argc, char** argv) {
 
 	ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", 1, 
 					&perception::Segmenter::Callback, &segmenter);
+/*
+	dynamic_reconfigure::Server<perception::SegmentationConfig> seg_server;
+	dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType seg_f;
 
-	dynamic_reconfigure::Server<perception::SegmentationConfig> server;
-	dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;
+	dynamic_reconfigure::Server<perception::CropConfig> crop_server;
+	dynamic_reconfigure::Server<perception::CropConfig>::CallbackType crop_f;
 
-	f = boost::bind(&perception::Segmenter::paramsCallback, &segmenter, _1, _2);
-	server.setCallback(f);
+	seg_f = boost::bind(&perception::Segmenter::paramsCallback, &segmenter, _1, _2);
+	seg_server.setCallback(seg_f);
+
+	crop_f = boost::bind(&perception::Cropper::paramsCallback, &cropper, _1, _2);
+	crop_server.setCallback(crop_f);
+*/
 
 	ros::spin();
 	return 0;

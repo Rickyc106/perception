@@ -11,8 +11,13 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 double min_x, min_y, min_z, max_x, max_y, max_z;
 
 namespace perception {
-	Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {}
+	//-- Default Cropper Constructor --//
+	Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {
+		f = boost::bind(&Cropper::paramsCallback, this, _1, _2);
+		server.setCallback(f);
+	}
 
+	//-- Unused Member Function --//
 	void Cropper::SetParams() {
 		/*
 		ros::param::param("crop_min_x", min_x, 0.3);
@@ -27,10 +32,23 @@ namespace perception {
 		*/
 	}
 
+	//-- Unused Member Function --//
 	void Cropper::Crop() {
 
 	}
 
+	//-- Dynamic Reconfigure Callback --//
+	void Cropper::paramsCallback(perception::CropConfig &config, uint32_t level) {
+		ROS_INFO("Reconfigure Request: %f %f %f %f %f %f",
+				 config.crop_min_x,
+				 config.crop_min_y,
+				 config.crop_min_z,
+				 config.crop_max_x,
+				 config.crop_max_y,
+				 config.crop_max_z);
+	}
+
+	//-- Cropper Callback --//
 	void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
 		PointCloudC::Ptr cloud(new PointCloudC());
 		pcl::fromROSMsg(msg, *cloud);
@@ -38,15 +56,6 @@ namespace perception {
 
 		PointCloudC::Ptr cropped_cloud(new PointCloudC());
 		//SetParams();
-
-/*
-		ros::param::param("crop_min_x", min_x, 0.3);
-		ros::param::param("crop_min_y", min_y, -1.0);
-		ros::param::param("crop_min_z", min_z, 0.5);
-		ros::param::param("crop_max_x", max_x, 0.9);
-		ros::param::param("crop_max_y", max_y, 1.0);
-		ros::param::param("crop_max_z", max_z, 1.5);
-*/
 
 		ros::param::get("crop_min_x", min_x);
 		ros::param::get("crop_min_y", min_y);

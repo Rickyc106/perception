@@ -21,13 +21,13 @@
 #include "pcl/segmentation/extract_clusters.h"
 
 // Dynamic Reconfigure
-#include "dynamic_reconfigure/server.h"
 #include "perception/SegmentationConfig.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception {
+	//-- Helper Segment Surface Function --//
 	void SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
 		PointCloudC::Ptr subset_cloud) {
 
@@ -93,6 +93,7 @@ namespace perception {
 		extract.filter(*subset_cloud);
 	}
 
+	//-- Helper Marker Function --//
 	void GetAxisAlignedBoundingBox(PointCloudC::Ptr cloud, geometry_msgs::Pose* pose,
 		geometry_msgs::Vector3* scale) {
 
@@ -111,6 +112,7 @@ namespace perception {
 		ROS_INFO("Position: %f %f %f", min_pt.x(), min_pt.y(), min_pt.z());
 	}
 
+	//-- Helper Segement Surface Object Function --//
 	void SegmentSurfaceObjects(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
 							   std::vector<pcl::PointIndices>* object_indices) {
 		pcl::ExtractIndices<PointC> extract;
@@ -139,13 +141,19 @@ namespace perception {
 		ROS_INFO("There are %ld points above the table", above_surface_indices->indices.size());
 	}
 
+	//-- Default Segmenter Constructor --//
 	Segmenter::Segmenter(const ros::Publisher& surface_points_pub, 
 						 const ros::Publisher& marker_pub,
 						 const ros::Publisher& object_pub)
 		: surface_points_pub_(surface_points_pub), 
 		  marker_pub_(marker_pub),
-		  object_pub_(object_pub) {}
+		  object_pub_(object_pub) {
 
+			f = boost::bind(&Segmenter::paramsCallback, this, _1, _2);
+			server.setCallback(f);
+		}
+
+	//-- Dynamic Reconfigure Callback --//
 	void Segmenter::paramsCallback(perception::SegmentationConfig &config, uint32_t level) {
 		ROS_INFO("Reconfigure Request: %f %s %f %f %f %f %f",
 				 config.distance_threshold,
@@ -156,6 +164,7 @@ namespace perception {
 				 config.max_cluster_size);
 	}
 
+	//-- Segmenter Callback --//
 	void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
 		PointCloudC::Ptr cloud(new PointCloudC());
 		pcl::fromROSMsg(msg, *cloud);

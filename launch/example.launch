@@ -1,19 +1,34 @@
 <launch>
+	<!-- RGB-D Camera Driver -->
 	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch"/>
 	
+	<!-- Main Perception Node -->
 	<node name="perception" pkg="perception" type="demo" output="screen">
+		<!-- Planar Segment Params -->
 		<param name="distance_threshold" value="0.1"/>
 		<param name="axis" value="Z"/>
 		<param name="epsilon_angle" value="25.0"/>
 		<param name="distance_above_plane" value="0.005"/>
+
+		<!-- Euclidean Cluster Params -->
 		<param name="cluster_tolerance" value="0.01"/>
 		<param name="min_cluster_size" value="10"/>
 		<param name="max_cluster_size" value="10000"/>
+
+		<!-- Crop Params -->
+		<param name="crop_min_x" value="0.3"/>
+		<param name="crop_min_y" value="-1.0"/>
+		<param name="crop_min_z" value="0.5"/>
+		<param name="crop_max_x" value="0.9"/>
+		<param name="crop_max_y" value="1.0"/>
+		<param name="crop_max_z" value="1.5"/>
 	</node>
 	
+	<!-- Perception Visualization Node-->
 	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find perception)/rviz/example.rviz">
 	</node>
 	
+	<!-- Publish TF frames -->
 	<!--node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0 0.707 0 0 -0.707 map camera_color_optical_frame 100">
 	</node-->
 
