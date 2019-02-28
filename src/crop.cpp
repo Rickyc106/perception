@@ -5,16 +5,32 @@
 #include "pcl/filters/crop_box.h"
 #include "pcl/filters/voxel_grid.h"
 
+#include "dynamic_reconfigure/server.h"
+
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 double min_x, min_y, min_z, max_x, max_y, max_z;
 
 namespace perception {
+	int main(int argc, char** argv) {
+		ros::init(argc, argv, "Cropper");
+		ros::NodeHandle nh;
+
+		ros::Publisher crop_pub = nh.advertise<sensor_msgs::PointCloud2>("cropped_cloud", 1);
+		Cropper cropper(crop_pub);
+
+		ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", 1,
+						&Cropper::Callback, &cropper);
+
+		ros::spin();
+		return 0;
+	}
+
 	//-- Default Cropper Constructor --//
 	Cropper::Cropper(const ros::Publisher& pub) : pub_(pub) {
-		f = boost::bind(&Cropper::paramsCallback, this, _1, _2);
-		server.setCallback(f);
+		f = boost::bind(&perception::Cropper::paramsCallback, this, _1, _2);
+		server.setCallback(f); 
 	}
 
 	//-- Unused Member Function --//

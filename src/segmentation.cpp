@@ -22,11 +22,29 @@
 
 // Dynamic Reconfigure
 #include "perception/SegmentationConfig.h"
+#include "dynamic_reconfigure/server.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
 namespace perception {
+	int main(int argc, char** argv) {
+		ros::init(argc, argv, "Segmenter");
+		ros::NodeHandle nh;
+
+		ros::Publisher table_pub = nh.advertise<sensor_msgs::PointCloud2>("table_cloud", 1);
+		ros::Publisher marker_pub = nh.advertise<sensor_msgs::PointCloud2>("visual_marker", 1);
+		ros::Publisher object_pub = nh.advertise<sensor_msgs::PointCloud2>("clustered_objects", 1);
+
+		Segmenter segmenter(table_pub, marker_pub, object_pub);
+
+		ros::Subscriber sub = nh.subscribe("cropped_cloud", 1,
+						&Segmenter::Callback, &segmenter);
+
+		ros::spin();
+		return 0;
+	}
+
 	//-- Helper Segment Surface Function --//
 	void SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
 		PointCloudC::Ptr subset_cloud) {
@@ -149,8 +167,8 @@ namespace perception {
 		  marker_pub_(marker_pub),
 		  object_pub_(object_pub) {
 
-			f = boost::bind(&Segmenter::paramsCallback, this, _1, _2);
-			server.setCallback(f);
+			//f = boost::bind(&Segmenter::paramsCallback, this, _1, _2);
+			//server.setCallback(f);
 		}
 
 	//-- Dynamic Reconfigure Callback --//

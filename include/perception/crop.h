@@ -17,6 +17,6 @@ namespace perception {
 		ros::Publisher pub_;
 
 		dynamic_reconfigure::Server<perception::CropConfig> server;
-		dynamic_reconfigure::Server<perception::CropConfig> f;
+		dynamic_reconfigure::Server<perception::CropConfig>::CallbackType f;
 	};
 }

@@ -52,6 +52,6 @@ namespace perception {
 			ros::Publisher object_pub_;
 
 			dynamic_reconfigure::Server<perception::SegmentationConfig> server;
-			dynamic_reconfigure::Server<perception::SegmentationConfig> f;
+			dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;
 	};
 }
