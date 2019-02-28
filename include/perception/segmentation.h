@@ -1,8 +1,9 @@
-#include "pcl/PointIndices.h"
-#include "pcl/point_cloud.h"
-#include "pcl/point_types.h"
 #include "ros/ros.h"
+#include "pcl/point_cloud.h"
+#include "pcl/PointIndices.h"
+#include "pcl/point_types.h"
 #include "sensor_msgs/PointCloud2.h"
+
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
 

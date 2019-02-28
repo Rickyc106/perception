@@ -1,11 +1,7 @@
-#include "ros/ros.h"
 #include "perception/crop.h"
-#include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/point_cloud.h"
+#include "pcl_conversions/pcl_conversions.h"
 #include "pcl/filters/crop_box.h"
-#include "pcl/filters/voxel_grid.h"
-
-#include "dynamic_reconfigure/server.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
@@ -92,18 +88,18 @@ namespace perception {
 		crop.filter(*cropped_cloud);
 		ROS_INFO("Cropped to %ld points", cropped_cloud->size());
 
-		PointCloudC::Ptr downsampled_cloud(new PointCloudC());
-		pcl::VoxelGrid<PointC> vox;
-		vox.setInputCloud(cloud);
+		//PointCloudC::Ptr downsampled_cloud(new PointCloudC());
+		//pcl::VoxelGrid<PointC> vox;
+		//vox.setInputCloud(cloud);
 
-		double voxel_size;
-		ros::param::param("voxel_size", voxel_size, 0.1);
-		vox.setLeafSize(voxel_size, voxel_size, voxel_size);
-		vox.filter(*downsampled_cloud);
+		//double voxel_size;
+		//ros::param::param("voxel_size", voxel_size, 0.1);
+		//vox.setLeafSize(voxel_size, voxel_size, voxel_size);
+		//vox.filter(*downsampled_cloud);
 
 		sensor_msgs::PointCloud2 msg_out;
-		//pcl::toROSMsg(*cropped_cloud, msg_out);
-		pcl::toROSMsg(*downsampled_cloud, msg_out);
+		pcl::toROSMsg(*cropped_cloud, msg_out);
+		//pcl::toROSMsg(*downsampled_cloud, msg_out);
 		pub_.publish(msg_out);
 	}
 }

@@ -32,24 +32,12 @@ include_directories(
 )
 
 add_library(crop src/crop.cpp)
+target_link_libraries(crop ${catkin_LIBRARIES} ${PCL_LIBARARIES})
+
 add_library(segment src/segmentation.cpp)
-
-target_link_libraries(crop 
-  ${catkin_LIBRARIES} 
-  ${PCL_LIBARARIES}
-)
-
-target_link_libraries(segment
-  ${catkin_LIBRARIES} 
-  ${PCL_LIBARARIES}
-)
+target_link_libraries(segment ${catkin_LIBRARIES} ${PCL_LIBARARIES})
 
 add_executable(demo src/demo.cpp)
-target_link_libraries(demo 
-  ${catkin_LIBRARIES} 
-  ${PCL_LIBARARIES} 
-  crop
-  segment
-)
+target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBARARIES} crop segment)
 
 add_dependencies(segment ${PROJECT_NAME}_gencfg)

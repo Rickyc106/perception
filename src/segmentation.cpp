@@ -1,10 +1,5 @@
 #include "perception/segmentation.h"
-#include "pcl/PointIndices.h"
-#include "pcl/point_cloud.h"
-#include "pcl/point_types.h"
 #include "pcl_conversions/pcl_conversions.h"
-#include "ros/ros.h"
-#include "sensor_msgs/PointCloud2.h"
 #include "pcl/common/common.h"
 #include "visualization_msgs/Marker.h"
 
@@ -19,10 +14,6 @@
 
 // Euclidean Cluster Extraction
 #include "pcl/segmentation/extract_clusters.h"
-
-// Dynamic Reconfigure
-#include "perception/SegmentationConfig.h"
-#include "dynamic_reconfigure/server.h"
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
