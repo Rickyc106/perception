@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
 generate_dynamic_reconfigure_options(
     cfg/segmentation.cfg
     cfg/crop.cfg
+    cfg/downsample.cfg
 )
 
 catkin_package(CATKIN_DEPENDS
@@ -22,7 +23,6 @@ catkin_package(CATKIN_DEPENDS
 
   INCLUDE_DIRS include
   LIBRARIES
-    crop
 )
 
 include_directories(
@@ -31,13 +31,11 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
-add_library(crop src/crop.cpp)
+add_executable(crop src/crop.cpp)
 target_link_libraries(crop ${catkin_LIBRARIES} ${PCL_LIBARARIES})
 
-add_library(segment src/segmentation.cpp)
+add_executable(downsample src/downsample.cpp)
+target_link_libraries(downsample ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(segment src/segmentation.cpp)
 target_link_libraries(segment ${catkin_LIBRARIES} ${PCL_LIBARARIES})
-
-add_executable(demo src/demo.cpp)
-target_link_libraries(demo ${catkin_LIBRARIES} ${PCL_LIBARARIES} crop segment)
-
-add_dependencies(segment ${PROJECT_NAME}_gencfg)

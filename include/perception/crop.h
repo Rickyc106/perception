@@ -7,8 +7,6 @@ namespace perception {
 	class Cropper {
 	public:
 		Cropper(const ros::Publisher& pub);
-		void SetParams();
-		void Crop();
 
 		void paramsCallback(perception::CropConfig &config, uint32_t level);
 		void Callback(const sensor_msgs::PointCloud2& msg);
