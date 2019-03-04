@@ -52,7 +52,7 @@ namespace perception {
 			ros::Publisher surface_points_pub_;
 			ros::Publisher marker_pub_;
 			ros::Publisher object_pub_;
-
+			
 			dynamic_reconfigure::Server<perception::SegmentationConfig> server;
 			dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;
 

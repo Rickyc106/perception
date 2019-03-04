@@ -45,7 +45,7 @@ namespace perception {
 		  object_pub_(object_pub) {
 
 		f = boost::bind(&perception::Segmenter::paramsCallback, this, _1, _2);
-		server.setCallback(f);
+		server.setCallback(f); 
 	}
 
 	//-- Helper Segment Surface Function --//

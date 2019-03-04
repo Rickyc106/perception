@@ -41,7 +41,7 @@ namespace perception {
 	void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
 		PointCloudC::Ptr cloud(new PointCloudC());
 		pcl::fromROSMsg(msg, *cloud);
-		ROS_INFO("Cropper got point cloud with %ld points", cloud->size());
+		//ROS_INFO("Cropper got point cloud with %ld points", cloud->size());
 
 		PointCloudC::Ptr cropped_cloud(new PointCloudC());
 
@@ -52,7 +52,7 @@ namespace perception {
 		ros::param::get("crop_max_y", max_y);
 		ros::param::get("crop_max_z", max_z);
 
-		ROS_INFO("Min x: %f", min_x);
+		//ROS_INFO("Min x: %f", min_x);
 
 		Eigen::Vector4f min_pt(min_x, min_y, min_z, 1);
 		Eigen::Vector4f max_pt(max_x, max_y, max_z, 1);
@@ -62,16 +62,7 @@ namespace perception {
 		crop.setMin(min_pt);
 		crop.setMax(max_pt);
 		crop.filter(*cropped_cloud);
-		ROS_INFO("Cropped to %ld points", cropped_cloud->size());
-
-		//PointCloudC::Ptr downsampled_cloud(new PointCloudC());
-		//pcl::VoxelGrid<PointC> vox;
-		//vox.setInputCloud(cloud);
-
-		//double voxel_size;
-		//ros::param::param("voxel_size", voxel_size, 0.1);
-		//vox.setLeafSize(voxel_size, voxel_size, voxel_size);
-		//vox.filter(*downsampled_cloud);
+		//ROS_INFO("Cropped to %ld points", cropped_cloud->size());
 
 		sensor_msgs::PointCloud2 msg_out;
 		pcl::toROSMsg(*cropped_cloud, msg_out);
