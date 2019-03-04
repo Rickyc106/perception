@@ -35,6 +35,9 @@
 	<!-- Perception Visualization Node-->
 	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find perception)/rviz/example.rviz">
 	</node>
+
+	<!-- Dynamic Reconfigure Node -->
+	<node name="Reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen"/> 
 	
 	<!-- Publish TF frames -->
 	<!--node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0 0.707 0 0 -0.707 map camera_color_optical_frame 100">

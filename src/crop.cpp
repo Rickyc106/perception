@@ -29,24 +29,21 @@ namespace perception {
 
 	//-- Dynamic Reconfigure Callback --//
 	void Cropper::paramsCallback(perception::CropConfig &config, uint32_t level) {
-		ROS_INFO("Reconfigure Request: %f %f %f %f %f %f",
-				 config.crop_min_x,
-				 config.crop_min_y,
-				 config.crop_min_z,
-				 config.crop_max_x,
-				 config.crop_max_y,
-				 config.crop_max_z);
+		min_x = config.crop_min_x;
+		min_y = config.crop_min_y;
+		min_z = config.crop_min_z;
+		max_x = config.crop_max_x;
+		max_y = config.crop_max_y;
+		max_z = config.crop_max_z;
 	}
 
 	//-- Cropper Callback --//
 	void Cropper::Callback(const sensor_msgs::PointCloud2& msg) {
 		PointCloudC::Ptr cloud(new PointCloudC());
 		pcl::fromROSMsg(msg, *cloud);
-		ROS_INFO("Got point cloud with %ld points", cloud->size());
+		ROS_INFO("Cropper got point cloud with %ld points", cloud->size());
 
 		PointCloudC::Ptr cropped_cloud(new PointCloudC());
-
-		double min_x, min_y, min_z, max_x, max_y, max_z;
 
 		ros::param::get("crop_min_x", min_x);
 		ros::param::get("crop_min_y", min_y);

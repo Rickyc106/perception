@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	ros::NodeHandle nh;
 
 	ros::Publisher table_pub = nh.advertise<sensor_msgs::PointCloud2>("table_cloud", 1);
-	ros::Publisher marker_pub = nh.advertise<sensor_msgs::PointCloud2>("visual_marker", 1);
+	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visual_marker", 1);
 	ros::Publisher object_pub = nh.advertise<sensor_msgs::PointCloud2>("clustered_objects", 1);
 
 	perception::Segmenter segmenter(table_pub, marker_pub, object_pub);
@@ -36,21 +36,27 @@ int main(int argc, char** argv) {
 }
 
 namespace perception {
+	//-- Default Segmenter Constructor --//
+	Segmenter::Segmenter(const ros::Publisher& surface_points_pub, 
+						 const ros::Publisher& marker_pub,
+						 const ros::Publisher& object_pub)
+		: surface_points_pub_(surface_points_pub), 
+		  marker_pub_(marker_pub),
+		  object_pub_(object_pub) {
+
+		f = boost::bind(&perception::Segmenter::paramsCallback, this, _1, _2);
+		server.setCallback(f);
+	}
+
 	//-- Helper Segment Surface Function --//
-	void SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
+	void Segmenter::SegmentSurface(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
 		PointCloudC::Ptr subset_cloud) {
 
-		float distance_threshold;
-		float epsilon_angle;
-		std::string axis_param;
-
-		double distance_above_plane;
-
-		ros::param::get("/perception/distance_threshold", distance_threshold);
-		ros::param::get("/perception/axis", axis_param);
-		ros::param::get("/perception/epsilon_angle", epsilon_angle);
+		ros::param::get("distance_threshold", distance_threshold);
+		ros::param::get("axis", axis_param);
+		ros::param::get("epsilon_angle", epsilon_angle);
 		
-		ros::param::get("/distance_above_plane", distance_above_plane);
+		ros::param::get("distance_above_plane", distance_above_plane);
 	
 		pcl::PointIndices indices_internal;
 		pcl::SACSegmentation<PointC> seg;
@@ -103,7 +109,7 @@ namespace perception {
 	}
 
 	//-- Helper Marker Function --//
-	void GetAxisAlignedBoundingBox(PointCloudC::Ptr cloud, geometry_msgs::Pose* pose,
+	void Segmenter::GetAxisAlignedBoundingBox(PointCloudC::Ptr cloud, geometry_msgs::Pose* pose,
 		geometry_msgs::Vector3* scale) {
 
 		Eigen::Vector4f min_pt, max_pt;
@@ -122,7 +128,7 @@ namespace perception {
 	}
 
 	//-- Helper Segement Surface Object Function --//
-	void SegmentSurfaceObjects(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
+	void Segmenter::SegmentSurfaceObjects(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices, 
 							   std::vector<pcl::PointIndices>* object_indices) {
 		pcl::ExtractIndices<PointC> extract;
 		pcl::PointIndices::Ptr above_surface_indices(new pcl::PointIndices());
@@ -131,12 +137,9 @@ namespace perception {
 		extract.setNegative(true);
 		extract.filter(above_surface_indices->indices);
 
-		double cluster_tolerance;
-		int min_cluster_size, max_cluster_size;
-
-		ros::param::get("/perception/cluster_tolerance", cluster_tolerance);
-		ros::param::get("/perception/min_cluster_size", min_cluster_size);
-		ros::param::get("/perception/max_cluster_size", max_cluster_size);
+		ros::param::get("cluster_tolerance", cluster_tolerance);
+		ros::param::get("min_cluster_size", min_cluster_size);
+		ros::param::get("max_cluster_size", max_cluster_size);
 
 		pcl::EuclideanClusterExtraction<PointC> euclid;
 		euclid.setInputCloud(cloud);
@@ -150,27 +153,16 @@ namespace perception {
 		ROS_INFO("There are %ld points above the table", above_surface_indices->indices.size());
 	}
 
-	//-- Default Segmenter Constructor --//
-	Segmenter::Segmenter(const ros::Publisher& surface_points_pub, 
-						 const ros::Publisher& marker_pub,
-						 const ros::Publisher& object_pub)
-		: surface_points_pub_(surface_points_pub), 
-		  marker_pub_(marker_pub),
-		  object_pub_(object_pub) {
-
-			//f = boost::bind(&Segmenter::paramsCallback, this, _1, _2);
-			//server.setCallback(f);
-		}
-
 	//-- Dynamic Reconfigure Callback --//
 	void Segmenter::paramsCallback(perception::SegmentationConfig &config, uint32_t level) {
-		ROS_INFO("Reconfigure Request: %f %s %f %f %f %f %f",
-				 config.distance_threshold,
-				 config.axis, config.epsilon_angle,
-				 config.distance_above_plane,
-				 config.cluster_tolerance,
-				 config.min_cluster_size,
-				 config.max_cluster_size);
+		distance_threshold = config.distance_threshold;
+		axis_param = config.axis;
+		epsilon_angle = config.epsilon_angle;
+		distance_above_plane = config.distance_above_plane;
+
+		cluster_tolerance = config.cluster_tolerance;
+		min_cluster_size = config.min_cluster_size;
+		max_cluster_size = config.max_cluster_size;
 	}
 
 	//-- Segmenter Callback --//
@@ -181,19 +173,19 @@ namespace perception {
 		pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
 		PointCloudC::Ptr subset_cloud(new PointCloudC);
 
-		SegmentSurface(cloud, table_inliers, subset_cloud);
+		this->SegmentSurface(cloud, table_inliers, subset_cloud);
 
 		visualization_msgs::Marker table_marker;
 		table_marker.header.frame_id = "camera_link";
 		table_marker.type = visualization_msgs::Marker::CUBE;
 
-		GetAxisAlignedBoundingBox(subset_cloud, &table_marker.pose, &table_marker.scale);
+		this->GetAxisAlignedBoundingBox(subset_cloud, &table_marker.pose, &table_marker.scale);
 		table_marker.color.r = 1;
 		table_marker.color.a = 0.8;
 		marker_pub_.publish(table_marker);
 
 		std::vector<pcl::PointIndices> object_indices;
-		SegmentSurfaceObjects(subset_cloud, table_inliers, &object_indices);
+		this->SegmentSurfaceObjects(subset_cloud, table_inliers, &object_indices);
 
 		sensor_msgs::PointCloud2 msg_out;
 		pcl::toROSMsg(*subset_cloud, msg_out);

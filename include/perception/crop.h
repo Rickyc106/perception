@@ -16,5 +16,8 @@ namespace perception {
 
 		dynamic_reconfigure::Server<perception::CropConfig> server;
 		dynamic_reconfigure::Server<perception::CropConfig>::CallbackType f;
+
+		double min_x, min_y, min_z;
+		double max_x, max_y, max_z;
 	};
 }

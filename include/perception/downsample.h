@@ -16,5 +16,7 @@ namespace perception {
 
 		dynamic_reconfigure::Server<perception::DownSampleConfig> server;
 		dynamic_reconfigure::Server<perception::DownSampleConfig>::CallbackType f;
+
+		double voxel_size;
 	};
 }

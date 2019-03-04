@@ -27,7 +27,7 @@ namespace perception {
 	}
 
 	void Downsampler::paramsCallback(perception::DownSampleConfig &config, uint32_t level) {
-		ROS_INFO("Reconfigure Request: %f", config.voxel_size);
+		voxel_size = config.voxel_size;
 	}
 
 	void Downsampler::Callback(const sensor_msgs::PointCloud2& msg) {
@@ -39,7 +39,6 @@ namespace perception {
 		pcl::VoxelGrid<PointC> vox;
 		vox.setInputCloud(cloud);
 
-		double voxel_size;
 		ros::param::get("voxel_size", voxel_size);
 		vox.setLeafSize(voxel_size, voxel_size, voxel_size);
 		vox.filter(*downsampled_cloud);
