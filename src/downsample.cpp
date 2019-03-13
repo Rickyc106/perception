@@ -33,7 +33,7 @@ namespace perception {
 	void Downsampler::Callback(const sensor_msgs::PointCloud2& msg) {
 		PointCloudC::Ptr cloud(new PointCloudC());
 		pcl::fromROSMsg(msg, *cloud);
-		ROS_INFO("Downsampler got point cloud with %ld points", cloud->size());
+		//ROS_INFO("Downsampler got point cloud with %ld points", cloud->size());
 
 		PointCloudC::Ptr downsampled_cloud(new PointCloudC());
 		pcl::VoxelGrid<PointC> vox;
