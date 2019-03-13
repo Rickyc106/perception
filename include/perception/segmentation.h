@@ -16,6 +16,12 @@ namespace perception {
 			Segmenter(const ros::Publisher& table_sub, 
 					  const ros::Publisher& marker_pub,
 					  const ros::Publisher& object_pub);
+			
+			void SegmentSurfaceFromNormals(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+								pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
+								pcl::PointIndices::Ptr indices, 
+								pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
+
 
 			// Finds the largest horizontal surface in the given point cloud.
 			// This is useful for adding a collision object to MoveIt.
@@ -24,10 +30,8 @@ namespace perception {
 			//  cloud: The point cloud to extract a surface from.
 			//  indices: The indices of points in the point cloud that correspond to the
 			//    surface. Empty if no surface was found.
-			
-			void SegmentSurface(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-								pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
-								pcl::PointIndices::Ptr indices, 
+			void SegmentSurfaceFromPerpendicular(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+								pcl::PointIndices::Ptr indices,
 								pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
 
 			// Computes the axis-aligned bounding box of a point cloud.
@@ -42,10 +46,14 @@ namespace perception {
 			                               geometry_msgs::Vector3* scale);
 
 			// Finds objects on segmented surface using Euclidean Clustering
-			void SegmentSurfaceObjects(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
-									   pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
-									   pcl::PointIndices::Ptr surface_indices,
-									   pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+			void SegmentCylinder(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+								 pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
+								 pcl::PointIndices::Ptr table_inliers,
+								 pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+
+			void SegmentClusters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+								 pcl::PointIndices::Ptr table_inliers,
+								 pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
 
 			void GetObjectMarkers(std::vector<pcl::PointIndices> object_indices);
 
