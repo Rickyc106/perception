@@ -13,6 +13,7 @@ generate_dynamic_reconfigure_options(
     cfg/segmentation.cfg
     cfg/crop.cfg
     cfg/downsample.cfg
+    cfg/statistical_removal.cfg
 )
 
 catkin_package(CATKIN_DEPENDS
@@ -30,6 +31,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
 )
+
+add_executable(stat_remove src/statistical_removal.cpp)
+target_link_libraries(stat_remove ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(crop src/crop.cpp)
 target_link_libraries(crop ${catkin_LIBRARIES} ${PCL_LIBARARIES})

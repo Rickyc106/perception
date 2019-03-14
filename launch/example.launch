@@ -1,6 +1,12 @@
 <launch>
 	<!-- RGB-D Camera Driver -->
 	<include file="$(find realsense2_camera)/launch/rs_rgbd.launch"/>
+
+	<!-- Statistical Outlier Remover Node -->
+	<node name="StatRemover" pkg="perception" type="stat_remove" output="screen">
+		<param name="mean_k" value="50"/>
+		<param name="std_dev_multiplier_thresh" value="1"/>
+	</node>
 	
 	<!-- Cropper Node -->
 	<node name="Cropper" pkg="perception" type="crop" output="screen">
@@ -40,6 +46,9 @@
 	<node name="Reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" output="screen"/> 
 	
 	<!-- Publish TF frames -->
+	<node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0 -0.5 -0.5 -0.5 0.5 map camera_link 100">
+	</node>
+
 	<!--node name="map_to_camera" pkg="tf" type="static_transform_publisher" args="0 0 0 0.707 0 0 -0.707 map camera_color_optical_frame 100">
 	</node-->
 

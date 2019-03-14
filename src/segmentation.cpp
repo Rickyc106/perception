@@ -216,9 +216,13 @@ namespace perception {
 		pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
 		pose->position.x = (max_pt.z() + min_pt.z()) / 2;
-		pose->position.y = (max_pt.x() + min_pt.x()) / 2;
-		pose->position.z = (max_pt.y() + min_pt.y()) / 2;
-		pose->orientation.w = 1;
+		pose->position.y = -(max_pt.x() + min_pt.x()) / 2;
+		pose->position.z = -(max_pt.y() + min_pt.y()) / 2;
+
+		//pose->orientation.x = 0.5;
+		//pose->orientation.y = -0.5;
+		//pose->orientation.z = 0.5;
+		pose->orientation.w = 1.0;
 
 		scale->x = max_pt.z() - min_pt.z();
 		scale->y = max_pt.x() - min_pt.x();

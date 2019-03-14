@@ -13,7 +13,7 @@
 namespace perception {
 	class Segmenter {
 		public:
-			Segmenter(const ros::Publisher& table_sub, 
+			Segmenter(const ros::Publisher& table_pub, 
 					  const ros::Publisher& marker_pub,
 					  const ros::Publisher& object_pub);
 
