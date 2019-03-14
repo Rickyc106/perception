@@ -225,6 +225,7 @@ namespace perception {
 		scale->z = max_pt.y() - min_pt.y();
 
 		//ROS_INFO("Position: %f %f %f", min_pt.x(), min_pt.y(), min_pt.z());
+		//ROS_INFO("Pose: %f %f %f", pose->position.x, pose->position.y, pose->position.z);
 	}
 
 	//-- Segment Cylinders given Planar Model Inliers (Point Indices) --//
@@ -295,6 +296,7 @@ namespace perception {
 		pcl::search::KdTree<PointC>::Ptr tree(new pcl::search::KdTree<PointC>());
 
 		std::vector<pcl::PointIndices> cluster_indices;
+		PointCloudC::Ptr clustered_cloud (new PointCloudC());
 
 
 		//---------- Filter Table from table point cloud ----------//
@@ -329,11 +331,7 @@ namespace perception {
 
 			ROS_INFO("Cluster Point Cloud: %ld", cluster->points.size());
 
-			sensor_msgs::PointCloud2 msg_out;
-			pcl::toROSMsg(*cluster, msg_out);
-			msg_out.header.frame_id = "camera_link";
-			object_pub_.publish(msg_out);
-
+			*clustered_cloud += *cluster;
 			currentClusterNum++;
 
 			// visualization_msgs::Marker object_marker;
@@ -342,6 +340,13 @@ namespace perception {
 			// object_marker.header.frame_id = "camera_link";
 			// object_marker.type = visualization_msgs::Marker::CUBE;
 		}
+
+		sensor_msgs::PointCloud2 msg_out;
+		pcl::toROSMsg(*clustered_cloud, msg_out);
+		msg_out.header.frame_id = "camera_link";
+		object_pub_.publish(msg_out);
+
+		this->GetObjectMarkers(object_cloud, cluster_indices);
 
 		//pcl::PointIndices::Ptr above_surface_indices(new pcl::PointIndices()); // Old
 
@@ -395,11 +400,18 @@ namespace perception {
 		//ROS_INFO("There are %ld points above the table", above_surface_indices->indices.size());
 	}
 
-	void Segmenter::GetObjectMarkers(std::vector<pcl::PointIndices> object_indices) {
+	void Segmenter::GetObjectMarkers(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices> object_indices) {
 		for (int i = 0; i < object_indices.size(); i++) {
 			pcl::PointIndices::Ptr indices(new pcl::PointIndices);
 			*indices = object_indices[i];
 			PointCloudC::Ptr object_cloud(new PointCloudC());
+
+			pcl::ExtractIndices<PointC> extract;
+
+			extract.setInputCloud(cloud);
+			extract.setIndices(indices);
+			extract.setNegative(false);
+			extract.filter(*object_cloud);
 
 			visualization_msgs::Marker object_marker;
 			object_marker.ns = "objects";

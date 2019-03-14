@@ -16,6 +16,12 @@ namespace perception {
 			Segmenter(const ros::Publisher& table_sub, 
 					  const ros::Publisher& marker_pub,
 					  const ros::Publisher& object_pub);
+
+			// TO-DO
+			// Reify indices to point cloud
+			// Then publish point cloud to topic
+			void indicesToPointCloud(pcl::PointIndices::Ptr indices,
+									 pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
 			
 			void SegmentSurfaceFromNormals(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
 								pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
@@ -55,7 +61,8 @@ namespace perception {
 								 pcl::PointIndices::Ptr table_inliers,
 								 pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
 
-			void GetObjectMarkers(std::vector<pcl::PointIndices> object_indices);
+			void GetObjectMarkers(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+								  std::vector<pcl::PointIndices> object_indices);
 
 			void paramsCallback(perception::SegmentationConfig &config, uint32_t level);
 			void Callback(const sensor_msgs::PointCloud2& msg);
