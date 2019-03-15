@@ -4,6 +4,7 @@
 #include "dynamic_reconfigure/server.h"
 
 namespace perception {
+	template <class T>
 	class Downsampler {
 	public:
 		Downsampler(const ros::Publisher& pub);
@@ -18,5 +19,6 @@ namespace perception {
 		dynamic_reconfigure::Server<perception::DownSampleConfig>::CallbackType f;
 
 		double voxel_size;
+		bool RGB;
 	};
 }

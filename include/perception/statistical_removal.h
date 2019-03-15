@@ -4,6 +4,7 @@
 #include "dynamic_reconfigure/server.h"
 
 namespace perception {
+	template <class T>
 	class StatRemover {
 		public:
 			StatRemover(const ros::Publisher& pub);
@@ -19,5 +20,7 @@ namespace perception {
 
 			double mean_k;
 			double std_dev_multiplier_thresh;
+
+			bool RGB;
 	};
 }

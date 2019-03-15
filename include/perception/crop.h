@@ -4,6 +4,7 @@
 #include "dynamic_reconfigure/server.h"
 
 namespace perception {
+	template <class T>
 	class Cropper {
 	public:
 		Cropper(const ros::Publisher& pub);
@@ -19,5 +20,7 @@ namespace perception {
 
 		double min_x, min_y, min_z;
 		double max_x, max_y, max_z;
+
+		bool RGB;
 	};
 }

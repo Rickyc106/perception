@@ -21,6 +21,10 @@
 
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
+
+typedef pcl::PointXYZI PointI;
+typedef pcl::PointCloud<pcl::PointXYZI> PointCloudI;
+
 typedef pcl::PointCloud<pcl::Normal> PointCloudNormal;
 
 int main(int argc, char** argv) {
@@ -31,31 +35,47 @@ int main(int argc, char** argv) {
 	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visual_marker", 1);
 	ros::Publisher object_pub = nh.advertise<sensor_msgs::PointCloud2>("clustered_objects", 1);
 
-	perception::Segmenter segmenter(table_pub, marker_pub, object_pub);
+	bool RGB;
+	ros::param::get("/perception/RGB", RGB);
 
-	ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
-					&perception::Segmenter::Callback, &segmenter);
+	if(RGB){
+		perception::Segmenter<PointC> segmenter(table_pub, marker_pub, object_pub);
 
-	ros::spin();
-	return 0;
+		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
+						&perception::Segmenter<PointC>::Callback, &segmenter);
+
+		ros::spin();
+		return 0;
+	}
+	else{
+		perception::Segmenter<PointI> segmenter(table_pub, marker_pub, object_pub);
+
+		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
+						&perception::Segmenter<PointI>::Callback, &segmenter);
+
+		ros::spin();
+		return 0;
+	}
 }
 
 namespace perception {
 	//-- Default Segmenter Constructor --//
-	Segmenter::Segmenter(const ros::Publisher& table_pub, 
+	template <class T>
+	Segmenter<T>::Segmenter(const ros::Publisher& table_pub, 
 						 const ros::Publisher& marker_pub,
 						 const ros::Publisher& object_pub)
 		: table_pub_(table_pub), 
 		  marker_pub_(marker_pub),
 		  object_pub_(object_pub) {
 
-		f = boost::bind(&perception::Segmenter::paramsCallback, this, _1, _2);
+		f = boost::bind(&perception::Segmenter<T>::paramsCallback, this, _1, _2);
 		server.setCallback(f); 
 	}
 
 	//-- Helper Segment Surface Function --//
-	void Segmenter::SegmentSurfaceFromNormals(PointCloudC::Ptr cloud, PointCloudNormal::Ptr cloud_normals, 
-		pcl::PointIndices::Ptr indices, PointCloudC::Ptr subset_cloud) {
+	template <class T>
+	void Segmenter<T>::SegmentSurfaceFromNormals(typename pcl::PointCloud<T>::Ptr cloud, PointCloudNormal::Ptr cloud_normals, 
+		pcl::PointIndices::Ptr indices, typename pcl::PointCloud<T>::Ptr subset_cloud) {
 		
 		if(cloud->size() > 0) {
 			ros::param::get("distance_threshold", distance_threshold);
@@ -63,8 +83,8 @@ namespace perception {
 			ros::param::get("epsilon_angle", epsilon_angle);
 			ros::param::get("normal_distance_weight", normal_distance_weight);
 
-			pcl::NormalEstimation<PointC, pcl::Normal> ne;
-			pcl::search::KdTree<PointC>::Ptr tree(new pcl::search::KdTree<PointC>());
+			pcl::NormalEstimation<T, pcl::Normal> ne;
+			typename pcl::search::KdTree<T>::Ptr tree(new pcl::search::KdTree<PointC>());
 
 			//---------- Estimate Point Normals ----------//
 			ne.setSearchMethod(tree);
@@ -74,7 +94,7 @@ namespace perception {
 		
 			//---------- Segment Table from Normals ----------//
 			pcl::PointIndices indices_internal;
-			pcl::SACSegmentationFromNormals<PointC, pcl::Normal> seg;
+			pcl::SACSegmentationFromNormals<T, pcl::Normal> seg;
 			seg.setOptimizeCoefficients(true);
 
 			// Search for a plane perpendicular to some axis (specified below).
@@ -102,7 +122,7 @@ namespace perception {
 				return;
 			}
 
-			pcl::ExtractIndices<PointC> extract;
+			pcl::ExtractIndices<T> extract;
 			extract.setInputCloud(cloud);
 			extract.setIndices(indices);
 			//extract.setNegative(false);
@@ -121,14 +141,18 @@ namespace perception {
 
 			//---------- Convert and Publish Cloud to Topic ----------//
 			sensor_msgs::PointCloud2 msg_out;
-			msg_out.header.frame_id = "camera_link";
+
+			if(RGB) msg_out.header.frame_id = "camera_link";
+			else msg_out.header.frame_id = "velodyne";
+
 			pcl::toROSMsg(*subset_cloud, msg_out);
 			table_pub_.publish(msg_out);
 		}
 	}
 
-	void Segmenter::SegmentSurfaceFromPerpendicular(PointCloudC::Ptr cloud,
-		pcl::PointIndices::Ptr indices, PointCloudC::Ptr subset_cloud) {
+	template <class T>
+	void Segmenter<T>::SegmentSurfaceFromPerpendicular(typename pcl::PointCloud<T>::Ptr cloud,
+		pcl::PointIndices::Ptr indices, typename pcl::PointCloud<T>::Ptr subset_cloud) {
 
 		ros::param::get("distance_threshold", distance_threshold);
 		ros::param::get("axis", axis_param);
@@ -137,10 +161,10 @@ namespace perception {
 
 		pcl::PointIndices indices_internal;
 		pcl::ModelCoefficients coeff;
-		pcl::SACSegmentation<PointC> seg;
+		pcl::SACSegmentation<T> seg;
 		Eigen::Vector3f axis;
 
-		pcl::ExtractIndices<PointC> extract;
+		pcl::ExtractIndices<T> extract;
 		visualization_msgs::Marker table_marker;
 		sensor_msgs::PointCloud2 msg_out;
 
@@ -193,7 +217,9 @@ namespace perception {
 		extract.setNegative(true); // True: See object | False: See table
 		extract.filter(*subset_cloud);
 
-		table_marker.header.frame_id = "camera_link";
+		if(RGB) table_marker.header.frame_id = "camera_link";
+		else table_marker.header.frame_id = "velodyne";
+
 		table_marker.type = visualization_msgs::Marker::CUBE;
 
 		//---------- Make Bounding Box and Publish Marker ----------//
@@ -203,13 +229,17 @@ namespace perception {
 		marker_pub_.publish(table_marker);
 
 		//---------- Convert and Publish Cloud to Topic ----------//
-		msg_out.header.frame_id = "camera_link";
 		pcl::toROSMsg(*subset_cloud, msg_out);
+
+		if(RGB) msg_out.header.frame_id = "camera_link";
+		else msg_out.header.frame_id = "velodyne";
+
 		table_pub_.publish(msg_out);
 	}
 
 	//-- Helper Marker Function --//
-	void Segmenter::GetAxisAlignedBoundingBox(PointCloudC::Ptr cloud, geometry_msgs::Pose* pose,
+	template <class T>
+	void Segmenter<T>::GetAxisAlignedBoundingBox(typename pcl::PointCloud<T>::Ptr cloud, geometry_msgs::Pose* pose,
 		geometry_msgs::Vector3* scale) {
 
 		Eigen::Vector4f min_pt, max_pt;
@@ -233,14 +263,15 @@ namespace perception {
 	}
 
 	//-- Segment Cylinders given Planar Model Inliers (Point Indices) --//
-	void Segmenter::SegmentCylinder(PointCloudC::Ptr cloud, PointCloudNormal::Ptr cloud_normals,
-		pcl::PointIndices::Ptr indices, pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud) {
+	template <class T>
+	void Segmenter<T>::SegmentCylinder(typename pcl::PointCloud<T>::Ptr cloud, PointCloudNormal::Ptr cloud_normals,
+		pcl::PointIndices::Ptr indices, typename pcl::PointCloud<T>::Ptr object_cloud) {
 
 		pcl::ExtractIndices<PointC> extract;
 		pcl::ExtractIndices<pcl::Normal> extract_normals;
 		
 		pcl::PointCloud<pcl::Normal>::Ptr cloud_normals_filtered(new pcl::PointCloud<pcl::Normal>);
-		PointCloudC::Ptr object_cloud_filtered(new PointCloudC());
+		typename pcl::PointCloud<T>::Ptr object_cloud_filtered(new pcl::PointCloud<T>());
 
 		//---------- Filter Table from table point cloud ----------//
 		extract.setInputCloud(cloud);
@@ -260,7 +291,7 @@ namespace perception {
 		ros::param::get("distance_threshold", distance_threshold);
 		ros::param::get("radius_limit", radius_limit);
 
-		pcl::SACSegmentationFromNormals<PointC, pcl::Normal> seg;
+		pcl::SACSegmentationFromNormals<T, pcl::Normal> seg;
 		seg.setOptimizeCoefficients(true);
 		seg.setModelType(pcl::SACMODEL_CYLINDER);
 		seg.setMethodType(pcl::SAC_RANSAC);
@@ -284,23 +315,27 @@ namespace perception {
 
 		//---------- Convert and Publish Cloud to Topic ----------//
 		sensor_msgs::PointCloud2 msg_out;
-		msg_out.header.frame_id = "camera_link";
 		pcl::toROSMsg(*object_cloud_filtered, msg_out);
+
+		if(RGB) msg_out.header.frame_id = "camera_link";
+		else msg_out.header.frame_id = "velodyne";
+
 		object_pub_.publish(msg_out);
 	}
 
-	void Segmenter::SegmentClusters(PointCloudC::Ptr cloud, pcl::PointIndices::Ptr indices,
-									PointCloudC::Ptr object_cloud) {
+	template <class T>
+	void Segmenter<T>::SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud, pcl::PointIndices::Ptr indices,
+									typename pcl::PointCloud<T>::Ptr object_cloud) {
 
 		ros::param::get("cluster_tolerance", cluster_tolerance);
 		ros::param::get("min_cluster_size", min_cluster_size);
 		ros::param::get("max_cluster_size", max_cluster_size);
 
-		pcl::ExtractIndices<PointC> extract;
-		pcl::search::KdTree<PointC>::Ptr tree(new pcl::search::KdTree<PointC>());
+		pcl::ExtractIndices<T> extract;
+		typename pcl::search::KdTree<T>::Ptr tree(new pcl::search::KdTree<T>());
 
 		std::vector<pcl::PointIndices> cluster_indices;
-		PointCloudC::Ptr clustered_cloud (new PointCloudC());
+		typename pcl::PointCloud<T>::Ptr clustered_cloud (new pcl::PointCloud<T>());
 
 
 		//---------- Filter Table from table point cloud ----------//
@@ -309,7 +344,7 @@ namespace perception {
 		extract.setNegative(true);
 		extract.filter(*object_cloud);
 
-		pcl::EuclideanClusterExtraction<PointC> clustering;
+		pcl::EuclideanClusterExtraction<T> clustering;
 		clustering.setInputCloud(object_cloud);
 		clustering.setClusterTolerance(cluster_tolerance);
 		clustering.setMinClusterSize(min_cluster_size);
@@ -321,7 +356,7 @@ namespace perception {
 
 		int currentClusterNum = 1;
 		for (std::vector<pcl::PointIndices>::const_iterator i = cluster_indices.begin(); i != cluster_indices.end(); i++) {
-			PointCloudC::Ptr cluster(new PointCloudC());
+			typename pcl::PointCloud<T>::Ptr cluster(new pcl::PointCloud<T>());
 
 			for (std::vector<int>::const_iterator point = i->indices.begin(); point != i->indices.end(); point++) {
 				cluster->points.push_back(object_cloud->points[*point]);
@@ -347,7 +382,10 @@ namespace perception {
 
 		sensor_msgs::PointCloud2 msg_out;
 		pcl::toROSMsg(*clustered_cloud, msg_out);
-		msg_out.header.frame_id = "camera_link";
+
+		if(RGB) msg_out.header.frame_id = "camera_link";
+		else msg_out.header.frame_id = "velodyne";
+
 		object_pub_.publish(msg_out);
 
 		this->GetObjectMarkers(object_cloud, cluster_indices);
@@ -404,13 +442,14 @@ namespace perception {
 		//ROS_INFO("There are %ld points above the table", above_surface_indices->indices.size());
 	}
 
-	void Segmenter::GetObjectMarkers(PointCloudC::Ptr cloud, std::vector<pcl::PointIndices> object_indices) {
+	template <class T>
+	void Segmenter<T>::GetObjectMarkers(typename pcl::PointCloud<T>::Ptr cloud, std::vector<pcl::PointIndices> object_indices) {
 		for (int i = 0; i < object_indices.size(); i++) {
 			pcl::PointIndices::Ptr indices(new pcl::PointIndices);
 			*indices = object_indices[i];
-			PointCloudC::Ptr object_cloud(new PointCloudC());
+			typename pcl::PointCloud<T>::Ptr object_cloud(new pcl::PointCloud<T>());
 
-			pcl::ExtractIndices<PointC> extract;
+			pcl::ExtractIndices<T> extract;
 
 			extract.setInputCloud(cloud);
 			extract.setIndices(indices);
@@ -420,7 +459,10 @@ namespace perception {
 			visualization_msgs::Marker object_marker;
 			object_marker.ns = "objects";
 			object_marker.id = i;
-			object_marker.header.frame_id = "camera_link";
+
+			if(RGB) object_marker.header.frame_id = "camera_link";
+			else object_marker.header.frame_id = "velodyne";
+
 			object_marker.type = visualization_msgs::Marker::CUBE;
 
 			this->GetAxisAlignedBoundingBox(object_cloud, &object_marker.pose, &object_marker.scale);
@@ -437,7 +479,8 @@ namespace perception {
 	}
 
 	//-- Dynamic Reconfigure Callback --//
-	void Segmenter::paramsCallback(perception::SegmentationConfig &config, uint32_t level) {
+	template <class T>
+	void Segmenter<T>::paramsCallback(perception::SegmentationConfig &config, uint32_t level) {
 		distance_threshold = config.distance_threshold;
 		axis_param = config.axis;
 		epsilon_angle = config.epsilon_angle;
@@ -454,19 +497,22 @@ namespace perception {
 	}
 
 	//-- Segmenter Callback --//
-	void Segmenter::Callback(const sensor_msgs::PointCloud2& msg) {
-		PointCloudC::Ptr cloud(new PointCloudC());
+	template <class T>
+	void Segmenter<T>::Callback(const sensor_msgs::PointCloud2& msg) {
+		typename pcl::PointCloud<T>::Ptr cloud(new pcl::PointCloud<T>());
 		pcl::fromROSMsg(msg, *cloud);
 
 		PointCloudNormal::Ptr cloud_normals(new PointCloudNormal);
 		pcl::PointIndices::Ptr table_inliers(new pcl::PointIndices());
-		PointCloudC::Ptr subset_cloud(new PointCloudC);
+		typename pcl::PointCloud<T>::Ptr subset_cloud(new pcl::PointCloud<T>());
+
+		ros::param::get("/perception/RGB", RGB);
 
 		//this->SegmentSurfaceFromNormals(cloud, cloud_normals, table_inliers, subset_cloud);
 		this->SegmentSurfaceFromPerpendicular(cloud, table_inliers, subset_cloud);
 
 		std::vector<pcl::PointIndices> object_indices;
-		PointCloudC::Ptr object_cloud(new PointCloudC);
+		typename pcl::PointCloud<T>::Ptr object_cloud(new pcl::PointCloud<T>());
 
 		//ROS_INFO("Point Cloud Normals: %ld ", cloud_normals->points.size());
 		//ROS_INFO("Table Inliers: %ld ", table_inliers->indices.size());

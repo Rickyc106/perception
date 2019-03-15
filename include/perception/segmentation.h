@@ -11,6 +11,7 @@
 #include "dynamic_reconfigure/server.h"
 
 namespace perception {
+	template <class T>
 	class Segmenter {
 		public:
 			Segmenter(const ros::Publisher& table_pub, 
@@ -21,12 +22,12 @@ namespace perception {
 			// Reify indices to point cloud
 			// Then publish point cloud to topic
 			void indicesToPointCloud(pcl::PointIndices::Ptr indices,
-									 pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
+									 typename pcl::PointCloud<T>::Ptr subset_cloud);
 			
-			void SegmentSurfaceFromNormals(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void SegmentSurfaceFromNormals(typename pcl::PointCloud<T>::Ptr cloud,
 								pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
 								pcl::PointIndices::Ptr indices, 
-								pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
+								typename pcl::PointCloud<T>::Ptr subset_cloud);
 
 
 			// Finds the largest horizontal surface in the given point cloud.
@@ -36,9 +37,9 @@ namespace perception {
 			//  cloud: The point cloud to extract a surface from.
 			//  indices: The indices of points in the point cloud that correspond to the
 			//    surface. Empty if no surface was found.
-			void SegmentSurfaceFromPerpendicular(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void SegmentSurfaceFromPerpendicular(typename pcl::PointCloud<T>::Ptr cloud,
 								pcl::PointIndices::Ptr indices,
-								pcl::PointCloud<pcl::PointXYZRGB>::Ptr subset_cloud);
+								typename pcl::PointCloud<T>::Ptr subset_cloud);
 
 			// Computes the axis-aligned bounding box of a point cloud.
 			//
@@ -47,21 +48,21 @@ namespace perception {
 			//  pose: The output pose. Because this is axis-aligned, the orientation is just
 			//    the identity. The position refers to the center of the box.
 			//  dimensions: The output dimensions, in meters.
-			void GetAxisAlignedBoundingBox(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void GetAxisAlignedBoundingBox(typename pcl::PointCloud<T>::Ptr cloud,
 			                               geometry_msgs::Pose* pose,
 			                               geometry_msgs::Vector3* scale);
 
 			// Finds objects on segmented surface using Euclidean Clustering
-			void SegmentCylinder(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void SegmentCylinder(typename pcl::PointCloud<T>::Ptr cloud,
 								 pcl::PointCloud<pcl::Normal>::Ptr cloud_normals, 
 								 pcl::PointIndices::Ptr table_inliers,
-								 pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+								 typename pcl::PointCloud<T>::Ptr object_cloud);
 
-			void SegmentClusters(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud,
 								 pcl::PointIndices::Ptr table_inliers,
-								 pcl::PointCloud<pcl::PointXYZRGB>::Ptr object_cloud);
+								 typename pcl::PointCloud<T>::Ptr object_cloud);
 
-			void GetObjectMarkers(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud,
+			void GetObjectMarkers(typename pcl::PointCloud<T>::Ptr cloud,
 								  std::vector<pcl::PointIndices> object_indices);
 
 			void paramsCallback(perception::SegmentationConfig &config, uint32_t level);
@@ -88,5 +89,7 @@ namespace perception {
 			double cluster_tolerance;
 			int min_cluster_size;
 			int max_cluster_size;
+
+			bool RGB;
 	};
 }
