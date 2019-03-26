@@ -10,10 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 generate_dynamic_reconfigure_options(
-    cfg/segmentation.cfg
     cfg/crop.cfg
     cfg/downsample.cfg
+    cfg/segmentation.cfg
     cfg/statistical_removal.cfg
+    cfg/classify.cfg
 )
 
 catkin_package(CATKIN_DEPENDS
@@ -32,9 +33,6 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
-add_executable(stat_remove src/statistical_removal.cpp)
-target_link_libraries(stat_remove ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
 add_executable(crop src/crop.cpp)
 target_link_libraries(crop ${catkin_LIBRARIES} ${PCL_LIBARARIES})
 
@@ -43,3 +41,9 @@ target_link_libraries(downsample ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(segment src/segmentation.cpp)
 target_link_libraries(segment ${catkin_LIBRARIES} ${PCL_LIBARARIES})
+
+add_executable(stat_remove src/statistical_removal.cpp)
+target_link_libraries(stat_remove ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(classify src/classify.cpp)
+target_link_libraries(classify ${catkin_LIBRARIES} ${PCL_LIBRARIES})
