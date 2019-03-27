@@ -16,12 +16,12 @@
 	<!-- Cropper Node -->
 	<node name="Cropper" pkg="perception" type="crop" output="screen">
 		<!-- Crop Params -->
-		<param name="crop_min_x" value="-2.0"/>
-		<param name="crop_min_y" value="-2.0"/>
-		<param name="crop_min_z" value="-2.0"/>
-		<param name="crop_max_x" value="5.0"/>
-		<param name="crop_max_y" value="5.0"/>
-		<param name="crop_max_z" value="5.0"/>
+		<param name="crop_min_x" value="0.0"/>
+		<param name="crop_min_y" value="-0.4"/>
+		<param name="crop_min_z" value="-10.0"/>
+		<param name="crop_max_x" value="1.1"/>
+		<param name="crop_max_y" value="0.0"/>
+		<param name="crop_max_z" value="10.0"/>
 	</node>
 
 	<!-- Downsampler Node -->
@@ -51,7 +51,7 @@
 	</node>
 
 	<!-- Perception Visualization Node-->
-	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find perception)/rviz/example.rviz">
+	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find perception)/rviz/velodyne_perception.rviz">
 	</node>
 
 	<!-- Dynamic Reconfigure Node -->
