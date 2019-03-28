@@ -43,6 +43,13 @@
 		<param name="max_cluster_size" value="10000"/>
 	</node>
 
+	<!-- Classifier Node -->
+	<node name="Classifier" pkg="perception" type="classify" output="screen" args="$(find perception)/data/">
+		<param name="radius_limit" value="0.03"/>
+		<param name="epsilon_angle" value="5.0"/>
+		<param name="curvature_threshold" value="1.0"/>
+	</node>
+
 	<!-- Perception Visualization Node-->
 	<node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find perception)/rviz/example.rviz">
 	</node>

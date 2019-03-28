@@ -352,7 +352,7 @@ namespace perception {
 		clustering.setSearchMethod(tree);
 		clustering.extract(cluster_indices);
 
-		ROS_INFO("Cluster Indices: %ld", cluster_indices.size());
+		//ROS_INFO("Cluster Indices: %ld", cluster_indices.size());
 
 		int currentClusterNum = 1;
 		for (std::vector<pcl::PointIndices>::const_iterator i = cluster_indices.begin(); i != cluster_indices.end(); i++) {
@@ -368,7 +368,7 @@ namespace perception {
 
 			if (cluster->points.size() <= 0) break;
 
-			ROS_INFO("Cluster Point Cloud: %ld", cluster->points.size());
+			//ROS_INFO("Cluster Point Cloud: %ld", cluster->points.size());
 
 			*clustered_cloud += *cluster;
 			currentClusterNum++;

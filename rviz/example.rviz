@@ -64,9 +64,9 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Size (Pixels): 3
-      Size (m): 0.04
+      Size (m): 0.01
       Style: Flat Squares
-      Topic: /table_cloud
+      Topic: /outlier_removed_cloud
       Unreliable: false
       Use Fixed Frame: true
       Use Rainbow: true
