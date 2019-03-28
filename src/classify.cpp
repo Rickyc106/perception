@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 	else{
 		perception::Classifier<PointI> classifier(marker_pub, descriptor_pub, location);
 
-		ros::Subscriber sub = nh.subscribe("outlier_removed_cloud", 1,
+		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
 						&perception::Classifier<PointI>::Callback, &classifier);
 
 		ros::spin();
@@ -139,13 +139,14 @@ namespace perception {
 
 		//ROS_INFO("Arguments passed %s", location_.c_str());
 
+/*
 		int c = getch();
 		if (c == 's') {
 			pcl::io::savePCDFile(filename_ss.str(), *descriptors);
 			ROS_INFO("Saving PCD File");
 			idx ++;
 		}
-
+*/
 		//ROS_INFO("CVFH: %ld", descriptors->points.size());
 
 		//---------- Convert and Publish Cloud to Topic ----------//
@@ -157,11 +158,11 @@ namespace perception {
 		pcl::toROSMsg(*descriptors, msg_out);
 		descriptor_pub_.publish(msg_out);
 
-		//pcl::visualization::PCLHistogramVisualizer viewer;
-		//if(viewer.addFeatureHistogram(*descriptors, 308)) ROS_INFO("Creating Histogram Visualizer");
-		//else viewer.updateFeatureHistogram(*descriptors, 308);
+		pcl::visualization::PCLHistogramVisualizer viewer;
+		if(viewer.addFeatureHistogram(*descriptors, 308)) ROS_INFO("Creating Histogram Visualizer");
+		else viewer.updateFeatureHistogram(*descriptors, 308);
 
-		//viewer.spin();
+		viewer.spin();
 	}
 /*
 	template <class T>
