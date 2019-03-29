@@ -44,7 +44,7 @@
 	</node>
 
 	<!-- Classifier Node -->
-	<node name="Classifier" pkg="perception" type="classify" output="screen" args="$(find perception)/data/">
+	<node name="Classifier" pkg="perception" type="classify" output="screen" args="$(find perception)/data/rgbd">
 		<param name="radius_limit" value="0.03"/>
 		<param name="epsilon_angle" value="5.0"/>
 		<param name="curvature_threshold" value="1.0"/>

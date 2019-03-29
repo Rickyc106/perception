@@ -18,9 +18,9 @@
 		<!-- Crop Params -->
 		<param name="crop_min_x" value="0.0"/>
 		<param name="crop_min_y" value="-0.4"/>
-		<param name="crop_min_z" value="-10.0"/>
-		<param name="crop_max_x" value="1.1"/>
-		<param name="crop_max_y" value="0.0"/>
+		<param name="crop_min_z" value="-0.5"/>
+		<param name="crop_max_x" value="2.0"/>
+		<param name="crop_max_y" value="2.0"/>
 		<param name="crop_max_z" value="10.0"/>
 	</node>
 
@@ -38,7 +38,7 @@
 		<param name="distance_above_plane" value="0.005"/>
 
 		<!-- Euclidean Cluster Params -->
-		<param name="cluster_tolerance" value="0.06"/>
+		<param name="cluster_tolerance" value="1.0"/>
 		<param name="min_cluster_size" value="200"/>
 		<param name="max_cluster_size" value="10000"/>
 	</node>

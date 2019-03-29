@@ -4,6 +4,7 @@
 #include "pcl/features/normal_3d.h"
 #include "pcl/features/cvfh.h"
 //#include "pcl/features/grsd.h"
+#include "pcl/features/esf.h"
 
 #include "pcl/common/angles.h"
 #include "pcl/visualization/histogram_visualizer.h"
@@ -34,6 +35,7 @@ int main(int argc, char** argv) {
 
 	if(RGB) {
 		perception::Classifier<PointC> classifier(marker_pub, descriptor_pub, location);
+		ROS_INFO("Classifying RGB");
 
 		ros::Subscriber sub = nh.subscribe("outlier_removed_cloud", 1,
 						&perception::Classifier<PointC>::Callback, &classifier);
@@ -43,6 +45,7 @@ int main(int argc, char** argv) {
 	}
 	else{
 		perception::Classifier<PointI> classifier(marker_pub, descriptor_pub, location);
+		ROS_INFO("Classifying LIDAR");
 
 		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
 						&perception::Classifier<PointI>::Callback, &classifier);
@@ -192,6 +195,22 @@ namespace perception {
 		viewer.spin();
 	}
 */
+
+	template <class T>
+	void Classifier<T>::ESF_Descriptors(typename pcl::PointCloud<T>::Ptr cloud) {
+		pcl::ESFEstimation<T, pcl::ESFSignature640> esf;
+		pcl::PointCloud<pcl::ESFSignature640>::Ptr descriptor(new pcl::PointCloud<pcl::ESFSignature640>());
+		
+		esf.setInputCloud(cloud);
+		esf.compute(*descriptor);
+
+		pcl::visualization::PCLHistogramVisualizer viewer;
+		if(viewer.addFeatureHistogram(*descriptor, 640)) ROS_INFO("Creating Histogram Visualizer");
+		else viewer.updateFeatureHistogram(*descriptor, 640);
+
+		viewer.spin();
+	}
+
 	template <class T>
 	void Classifier<T>::paramsCallback(perception::ClassifyConfig &config, uint32_t level) {
 		radius_limit = config.radius_limit;
@@ -207,7 +226,8 @@ namespace perception {
 		pcl::fromROSMsg(msg, *cloud);
 		this->computeNormals(cloud, normals);
 
-		this->CVFH_Descriptors(cloud, normals);
+		//this->CVFH_Descriptors(cloud, normals);
 		//this->GRSD_Descriptors(cloud);
+		this->ESF_Descriptors(cloud);
 	}
 }

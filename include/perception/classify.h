@@ -23,6 +23,8 @@ namespace perception {
 							  typename pcl::PointCloud<pcl::Normal>::Ptr normals);
 		void GRSD_Descriptors(typename pcl::PointCloud<T>::Ptr cloud);
 
+		void ESF_Descriptors(typename pcl::PointCloud<T>::Ptr cloud);
+
 		void paramsCallback(perception::ClassifyConfig &config, uint32_t level);
 		void Callback(const sensor_msgs::PointCloud2& msg);
 
