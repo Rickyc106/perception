@@ -18,14 +18,26 @@ namespace perception {
 
 		void computeNormals(typename pcl::PointCloud<T>::Ptr cloud,
 							typename pcl::PointCloud<pcl::Normal>::Ptr normals);
+		void computeSize(typename pcl::PointCloud<T>::Ptr cloud, int *array);
 
+		// Local Descriptors
+		void FPFH_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
+							  typename pcl::PointCloud<pcl::Normal>::Ptr normals);
+		void RSD_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
+							 typename pcl::PointCloud<pcl::Normal>::Ptr normals);
+		void SC3D_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
+					 		  typename pcl::PointCloud<pcl::Normal>::Ptr normals);
+
+		// Global Descriptors
 		void CVFH_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
 							  typename pcl::PointCloud<pcl::Normal>::Ptr normals);
 		void GRSD_Descriptors(typename pcl::PointCloud<T>::Ptr cloud);
-
 		void ESF_Descriptors(typename pcl::PointCloud<T>::Ptr cloud);
 
+		// Dynamic Reconfigure
 		void paramsCallback(perception::ClassifyConfig &config, uint32_t level);
+
+		// Subscriber callback to original point cloud
 		void Callback(const sensor_msgs::PointCloud2& msg);
 
 	private:
@@ -33,7 +45,7 @@ namespace perception {
 		ros::Publisher descriptor_pub_;
 
 		std::string location_;
-		int idx = 0;
+		int idx;
 
 		dynamic_reconfigure::Server<perception::ClassifyConfig> server;
 		dynamic_reconfigure::Server<perception::ClassifyConfig>::CallbackType f;
@@ -41,6 +53,7 @@ namespace perception {
 		double radius_limit;
 		double epsilon_angle;
 		double curvature_threshold;
+		double plane_radius;
 
 		bool RGB;
 	};

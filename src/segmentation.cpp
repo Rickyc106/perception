@@ -344,6 +344,24 @@ namespace perception {
 		extract.setNegative(true);
 		extract.filter(*object_cloud);
 
+		int size = object_cloud->points.size();
+
+		if (size == 0) {
+			ROS_INFO("Warning: Cluster Cloud Non existent");
+			return;
+		}
+		else if (size < min_cluster_size) {
+			ROS_INFO("Warning: Cluster Cloud less than min cluster size");
+			return;
+		}
+		else if (size > max_cluster_size) {
+			ROS_INFO("Warning: Cluster Cloud more than max cluster size");
+			return;
+		}
+
+		//ROS_INFO("I am NOT returning");
+		//ROS_INFO("Object Cloud size: %ld", object_cloud->points.size());
+
 		pcl::EuclideanClusterExtraction<T> clustering;
 		clustering.setInputCloud(object_cloud);
 		clustering.setClusterTolerance(cluster_tolerance);
@@ -509,7 +527,7 @@ namespace perception {
 		ros::param::get("/perception/RGB", RGB);
 
 		//this->SegmentSurfaceFromNormals(cloud, cloud_normals, table_inliers, subset_cloud);
-		this->SegmentSurfaceFromPerpendicular(cloud, table_inliers, subset_cloud);
+		//this->SegmentSurfaceFromPerpendicular(cloud, table_inliers, subset_cloud);
 
 		std::vector<pcl::PointIndices> object_indices;
 		typename pcl::PointCloud<T>::Ptr object_cloud(new pcl::PointCloud<T>());

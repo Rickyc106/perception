@@ -1,6 +1,10 @@
 #include "perception/classify.h"
 #include "pcl_conversions/pcl_conversions.h"
 
+#include "pcl/features/fpfh.h"
+//#include <pcl/features/rsd.h>
+#include "pcl/features/3dsc.h"
+
 #include "pcl/features/normal_3d.h"
 #include "pcl/features/cvfh.h"
 //#include "pcl/features/grsd.h"
@@ -47,7 +51,7 @@ int main(int argc, char** argv) {
 		perception::Classifier<PointI> classifier(marker_pub, descriptor_pub, location);
 		ROS_INFO("Classifying LIDAR");
 
-		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
+		ros::Subscriber sub = nh.subscribe("outlier_removed_cloud", 1,
 						&perception::Classifier<PointI>::Callback, &classifier);
 
 		ros::spin();
@@ -92,6 +96,7 @@ namespace perception {
 		  descriptor_pub_(descriptor_pub) {
 
 		location_ = location;
+		idx = 0;
 
 		f = boost::bind(&perception::Classifier<T>::paramsCallback, this, _1, _2);
 		server.setCallback(f);
@@ -110,6 +115,78 @@ namespace perception {
 		norm.compute(*normals);
 	}
 
+	template<class T>
+	void Classifier<T>::computeSize(typename pcl::PointCloud<T>::Ptr cloud, int *array) {
+		Eigen::Vector4f min_pt, max_pt;
+		pcl::getMinMax3D(*cloud, min_pt, max_pt);
+
+		array[0] = (max_pt.z() - min_pt.z());
+		array[1] = (max_pt.x() - min_pt.x());
+		array[2] = (max_pt.y() - min_pt.y());
+		array[3] = cloud->points.size();
+	}
+
+	template<class T>
+	void Classifier<T>::FPFH_Descriptors(typename pcl::PointCloud<T>::Ptr cloud, 
+										 typename pcl::PointCloud<pcl::Normal>::Ptr normals) {
+		pcl::PointCloud<pcl::FPFHSignature33>::Ptr descriptors(new pcl::PointCloud<pcl::FPFHSignature33>());
+		typename pcl::search::KdTree<T>::Ptr kdtree(new pcl::search::KdTree<T>);
+
+		pcl::FPFHEstimation<T, pcl::Normal, pcl::FPFHSignature33> fpfh;
+		fpfh.setInputCloud(cloud);
+		fpfh.setInputNormals(normals);
+		fpfh.setSearchMethod(kdtree);
+		fpfh.setSearchRadius(0.05);
+		fpfh.compute(*descriptors);
+
+		pcl::visualization::PCLHistogramVisualizer viewer;
+		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+			ROS_INFO("Creating Histogram Visualizer");
+			ROS_INFO("Press s to save histogram");
+
+			int c = getch();
+			if (c == 's') {
+				//pcl::io::savePCDFile(filename_ss.str(), *descriptors);
+				ROS_INFO("Saving PCD File");
+				idx ++;
+			}
+
+			viewer.spinOnce();
+		}
+	}
+/*
+	template<class T>
+	void Classifier<T>::RSD_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
+										typename pcl::PointCloud<pcl::Normal>::Ptr normals) {
+		pcl::PointCloud<pcl::PrincipalRadiiRSD>::Ptr descriptors(new pcl::PointCloud<pcl::PrincipalRadiiRSD>());
+		typename pcl::search::KdTree<T>::Ptr kdtree(new pcl::search::KdTree<T>);
+
+		pcl::RSDEstimation<T, pcl::Normal, pcl::PrincipalRadiiRSD> rsd;
+		rsd.setInputCloud(cloud);
+		rsd.setInputNormals(normals);
+		rsd.setSearchMethod(kdtree);
+		rsd.setRadiusSearch(0.03);
+		rsd.setPlaneRadius(plane_radius);
+		rsd.setSaveHistograms(false);
+		rsd.compute(*descriptors);
+
+		pcl::visualization::PCLHistogramVisualizer viewer;
+		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+			ROS_INFO("Creating Histogram Visualizer");
+			ROS_INFO("Press s to save histogram");
+
+			int c = getch();
+			if (c == 's') {
+				//pcl::io::savePCDFile(filename_ss.str(), *descriptors);
+				ROS_INFO("Saving PCD File");
+				idx ++;
+			}
+
+			viewer.spinOnce();
+		}
+
+	}
+*/
 	template <class T>
 	void Classifier<T>::CVFH_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
 										 typename pcl::PointCloud<pcl::Normal>::Ptr normals) {
@@ -162,10 +239,22 @@ namespace perception {
 		descriptor_pub_.publish(msg_out);
 
 		pcl::visualization::PCLHistogramVisualizer viewer;
-		if(viewer.addFeatureHistogram(*descriptors, 308)) ROS_INFO("Creating Histogram Visualizer");
-		else viewer.updateFeatureHistogram(*descriptors, 308);
+		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+			ROS_INFO("Creating Histogram Visualizer");
+			ROS_INFO("Press s to save histogram");
 
-		viewer.spin();
+			int c = getch();
+			if (c == 's') {
+				pcl::io::savePCDFile(filename_ss.str(), *descriptors);
+				ROS_INFO("Saving PCD File");
+				idx ++;
+			}
+
+			viewer.spinOnce();
+		}
+		//else viewer.updateFeatureHistogram(*descriptors, 308);
+
+		//viewer.spin();
 	}
 /*
 	template <class T>
@@ -195,6 +284,36 @@ namespace perception {
 		viewer.spin();
 	}
 */
+	template <class T>
+	void Classifier<T>::SC3D_Descriptors(typename pcl::PointCloud<T>::Ptr cloud, 
+										 typename pcl::PointCloud<pcl::Normal>::Ptr normals) {
+		pcl::PointCloud<pcl::ShapeContext1980>::Ptr descriptors(new pcl::PointCloud<pcl::ShapeContext1980>());
+		typename pcl::search::KdTree<T>::Ptr kdtree(new pcl::search::KdTree<T>);
+
+		pcl::ShapeContext3DEstimation<T, pcl::Normal, pcl::ShapeContext1980> sc3d;
+		sc3d.setInputCloud(cloud);
+		sc3d.setInputNormals(normals);
+		sc3d.setSearchMethod(kdtree);
+		sc3d.setRadiusSearch(0.05);
+		sc3d.setMinimalRadius(0.05 / 10.0);
+		sc3d.setPointDensity(0.05 / 5.0);
+		sc3d.compute(*descriptors);
+
+		pcl::visualization::PCLHistogramVisualizer viewer;
+		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+			ROS_INFO("Creating Histogram Visualizer");
+			ROS_INFO("Press s to save histogram");
+
+			int c = getch();
+			if (c == 's') {
+				//pcl::io::savePCDFile(filename_ss.str(), *descriptors);
+				ROS_INFO("Saving PCD File");
+				idx ++;
+			}
+
+			viewer.spinOnce();
+		}
+	}
 
 	template <class T>
 	void Classifier<T>::ESF_Descriptors(typename pcl::PointCloud<T>::Ptr cloud) {
@@ -216,6 +335,7 @@ namespace perception {
 		radius_limit = config.radius_limit;
 		epsilon_angle = config.epsilon_angle;
 		curvature_threshold = config.curvature_threshold;
+		plane_radius = config.plane_radius;
 	}
 
 	template <class T>
