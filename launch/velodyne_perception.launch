@@ -11,10 +11,10 @@
 	<node name="Cropper" pkg="perception" type="crop" output="screen">
 		<!-- Crop Params -->
 		<param name="crop_min_x" value="0.0"/>
-		<param name="crop_min_y" value="-0.4"/>
+		<param name="crop_min_y" value="-1.1"/>
 		<param name="crop_min_z" value="-10.0"/>
-		<param name="crop_max_x" value="2.4"/>
-		<param name="crop_max_y" value="0.3"/>
+		<param name="crop_max_x" value="2.2"/>
+		<param name="crop_max_y" value="0.0"/>
 		<param name="crop_max_z" value="10.0"/>
 	</node>
 
@@ -48,6 +48,8 @@
 		<param name="radius_limit" value="0.03"/>
 		<param name="epsilon_angle" value="5.0"/>
 		<param name="curvature_threshold" value="1.0"/>
+		<param name="plane_radius" value="0.1"/>
+		<param name="new_object_threshold" value="0.02"/>
 	</node>
 
 	<!-- Perception Visualization Node-->

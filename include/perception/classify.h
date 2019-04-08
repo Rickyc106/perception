@@ -6,6 +6,8 @@
 #include "perception/ClassifyConfig.h"
 #include "dynamic_reconfigure/server.h"
 
+#include "vector"
+
 namespace perception {
 	int getch();
 
@@ -18,7 +20,7 @@ namespace perception {
 
 		void computeNormals(typename pcl::PointCloud<T>::Ptr cloud,
 							typename pcl::PointCloud<pcl::Normal>::Ptr normals);
-		void computeSize(typename pcl::PointCloud<T>::Ptr cloud, int *array);
+		void computeSize(typename pcl::PointCloud<T>::Ptr cloud, double *array);
 
 		// Local Descriptors
 		void FPFH_Descriptors(typename pcl::PointCloud<T>::Ptr cloud,
@@ -46,6 +48,10 @@ namespace perception {
 
 		std::string location_;
 		int idx;
+		int esf_idx;
+
+		std::vector<std::vector<double> > esf_objects;
+		std::vector<double> test_vec;
 
 		dynamic_reconfigure::Server<perception::ClassifyConfig> server;
 		dynamic_reconfigure::Server<perception::ClassifyConfig>::CallbackType f;
@@ -54,6 +60,7 @@ namespace perception {
 		double epsilon_angle;
 		double curvature_threshold;
 		double plane_radius;
+		double new_object_threshold;
 
 		bool RGB;
 	};

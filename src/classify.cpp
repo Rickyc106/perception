@@ -20,6 +20,8 @@
 #include "termios.h"
 #include "unistd.h"
 
+#include "math.h"
+
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointXYZI PointI;
 
@@ -97,6 +99,7 @@ namespace perception {
 
 		location_ = location;
 		idx = 0;
+		esf_idx = 0;
 
 		f = boost::bind(&perception::Classifier<T>::paramsCallback, this, _1, _2);
 		server.setCallback(f);
@@ -116,7 +119,7 @@ namespace perception {
 	}
 
 	template<class T>
-	void Classifier<T>::computeSize(typename pcl::PointCloud<T>::Ptr cloud, int *array) {
+	void Classifier<T>::computeSize(typename pcl::PointCloud<T>::Ptr cloud, double *array) {
 		Eigen::Vector4f min_pt, max_pt;
 		pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
@@ -136,11 +139,11 @@ namespace perception {
 		fpfh.setInputCloud(cloud);
 		fpfh.setInputNormals(normals);
 		fpfh.setSearchMethod(kdtree);
-		fpfh.setSearchRadius(0.05);
+		fpfh.setRadiusSearch(0.05);
 		fpfh.compute(*descriptors);
 
 		pcl::visualization::PCLHistogramVisualizer viewer;
-		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+		if(viewer.addFeatureHistogram(*descriptors, 33)) {
 			ROS_INFO("Creating Histogram Visualizer");
 			ROS_INFO("Press s to save histogram");
 
@@ -243,18 +246,17 @@ namespace perception {
 			ROS_INFO("Creating Histogram Visualizer");
 			ROS_INFO("Press s to save histogram");
 
-			int c = getch();
+			/*int c = getch();
 			if (c == 's') {
 				pcl::io::savePCDFile(filename_ss.str(), *descriptors);
 				ROS_INFO("Saving PCD File");
 				idx ++;
-			}
-
-			viewer.spinOnce();
+			}*/
 		}
 		//else viewer.updateFeatureHistogram(*descriptors, 308);
 
-		//viewer.spin();
+		//viewer.spinOnce();
+		viewer.spin();
 	}
 /*
 	template <class T>
@@ -296,11 +298,12 @@ namespace perception {
 		sc3d.setSearchMethod(kdtree);
 		sc3d.setRadiusSearch(0.05);
 		sc3d.setMinimalRadius(0.05 / 10.0);
-		sc3d.setPointDensity(0.05 / 5.0);
+		sc3d.setPointDensityRadius(0.05 / 5.0);
 		sc3d.compute(*descriptors);
 
+/*
 		pcl::visualization::PCLHistogramVisualizer viewer;
-		if(viewer.addFeatureHistogram(*descriptors, 308)) {
+		if(viewer.addFeatureHistogram(*descriptors, 1980)) {
 			ROS_INFO("Creating Histogram Visualizer");
 			ROS_INFO("Press s to save histogram");
 
@@ -313,6 +316,7 @@ namespace perception {
 
 			viewer.spinOnce();
 		}
+*/
 	}
 
 	template <class T>
@@ -323,11 +327,71 @@ namespace perception {
 		esf.setInputCloud(cloud);
 		esf.compute(*descriptor);
 
+		std::vector<double> histogram_data;
+
+		for (int i = 0; i < 640; i++) {
+			histogram_data.push_back(descriptor->points[0].histogram[i]);
+		}
+
+		if(esf_idx == 0) {
+			esf_objects.push_back(histogram_data);
+			ROS_INFO("Empty Vector of Vectors. Appending 1st Object");
+
+			esf_idx += 1;
+			ROS_INFO("New object found! Currently %d objects found: ", esf_idx);
+		}
+		else {
+			/*
+			std::vector< std::vector<double> >::const_iterator object;
+			std::vector<double>::const_iterator column;
+
+			for(object = esf_objects.begin(); object != esf_objects.end(); object++) {
+				for(column = object->begin(); column != object->end(); column++) {
+					double diff = (histogram_data[*column] - esf_objects[*object][*column]);
+					sum_of_squares += std::pow(diff, diff);
+
+					if(sum_of_squares <= new_object_threshold) {
+						esf_objects.push_back(histogram_data);
+
+						esf_idx += 1;
+						ROS_INFO("New object found! Currently %d objects found: ", esf_idx);
+					}
+				}
+			}
+			*/
+
+			for(int object = 0; object != esf_objects.size(); object++) {
+				double sum_of_squares = 0;
+
+				for (int column = 0; column != esf_objects[object].size(); column++) {
+					double diff = (histogram_data[column] - esf_objects[object][column]);
+					sum_of_squares += std::pow(diff, 2);
+
+					if(sum_of_squares >= new_object_threshold) {
+						//ROS_INFO("1st Condition SS: %f \t object: %d", sum_of_squares, object);
+						if(object == (esf_objects.size() - 1)) {
+							//ROS_INFO("2nd Condition SS: %f \t object: %d", sum_of_squares, object);
+							esf_objects.push_back(histogram_data);
+
+							//ROS_INFO("sum of squares %f", sum_of_squares);
+							esf_idx += 1;
+							ROS_INFO("New object found! Currently %d objects found: ", esf_idx);
+						}
+					}
+				}
+
+				ROS_INFO("Current object compared to object %d: Sum of squares %f", object, sum_of_squares);
+
+			}
+		}
+
+		/*
 		pcl::visualization::PCLHistogramVisualizer viewer;
 		if(viewer.addFeatureHistogram(*descriptor, 640)) ROS_INFO("Creating Histogram Visualizer");
 		else viewer.updateFeatureHistogram(*descriptor, 640);
 
 		viewer.spin();
+		*/
 	}
 
 	template <class T>
@@ -336,6 +400,7 @@ namespace perception {
 		epsilon_angle = config.epsilon_angle;
 		curvature_threshold = config.curvature_threshold;
 		plane_radius = config.plane_radius;
+		new_object_threshold = config.new_object_threshold;
 	}
 
 	template <class T>
@@ -346,8 +411,20 @@ namespace perception {
 		pcl::fromROSMsg(msg, *cloud);
 		this->computeNormals(cloud, normals);
 
+		double size_array[4];
+		this->computeSize(cloud, size_array);
+
+/*
+		ROS_INFO("Length: %f", size_array[0]);
+		ROS_INFO("Width: %f", size_array[1]);
+		ROS_INFO("Height: %f", size_array[2]);
+		ROS_INFO("Point Cloud Size: %f", size_array[3]);
+*/
+
 		//this->CVFH_Descriptors(cloud, normals);
 		//this->GRSD_Descriptors(cloud);
 		this->ESF_Descriptors(cloud);
+		//this->FPFH_Descriptors(cloud, normals);
+		//this->SC3D_Descriptors(cloud, normals);
 	}
 }
