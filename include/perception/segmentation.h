@@ -3,6 +3,7 @@
 #include "pcl/PointIndices.h"
 #include "pcl/point_types.h"
 #include "sensor_msgs/PointCloud2.h"
+#include "pcl_msgs/PointIndices.h"
 
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/Vector3.h"
@@ -16,7 +17,8 @@ namespace perception {
 		public:
 			Segmenter(const ros::Publisher& table_pub, 
 					  const ros::Publisher& marker_pub,
-					  const ros::Publisher& object_pub);
+					  const ros::Publisher& object_pub,
+					  const ros::Publisher& object_indices_pub);
 
 			// TO-DO
 			// Reify indices to point cloud
@@ -59,6 +61,9 @@ namespace perception {
 								 typename pcl::PointCloud<T>::Ptr object_cloud);
 
 			void SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud,
+								 typename pcl::PointCloud<T>::Ptr object_cloud);
+
+			void SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud,
 								 pcl::PointIndices::Ptr table_inliers,
 								 typename pcl::PointCloud<T>::Ptr object_cloud);
 
@@ -72,6 +77,7 @@ namespace perception {
 			ros::Publisher table_pub_;
 			ros::Publisher marker_pub_;
 			ros::Publisher object_pub_;
+			ros::Publisher object_indices_pub_;
 			
 			dynamic_reconfigure::Server<perception::SegmentationConfig> server;
 			dynamic_reconfigure::Server<perception::SegmentationConfig>::CallbackType f;

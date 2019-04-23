@@ -7,6 +7,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   dynamic_reconfigure
+  message_generation
 )
 
 generate_dynamic_reconfigure_options(
@@ -17,11 +18,25 @@ generate_dynamic_reconfigure_options(
     cfg/classify.cfg
 )
 
+add_message_files(
+  FILES
+  vector.msg
+  indices.msg
+  PointCloudArray.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  sensor_msgs
+)
+
 catkin_package(CATKIN_DEPENDS
   pcl_conversions
   pcl_ros
   roscpp
   sensor_msgs
+  message_runtime
 
   INCLUDE_DIRS include
   LIBRARIES
@@ -40,6 +55,7 @@ add_executable(downsample src/downsample.cpp)
 target_link_libraries(downsample ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(segment src/segmentation.cpp)
+add_dependencies(segment perception_generate_messages_cpp)
 target_link_libraries(segment ${catkin_LIBRARIES} ${PCL_LIBARARIES})
 
 add_executable(stat_remove src/statistical_removal.cpp)

@@ -11,10 +11,10 @@
 	<node name="Cropper" pkg="perception" type="crop" output="screen">
 		<!-- Crop Params -->
 		<param name="crop_min_x" value="0.0"/>
-		<param name="crop_min_y" value="-1.1"/>
-		<param name="crop_min_z" value="-10.0"/>
+		<param name="crop_min_y" value="-0.3"/>
+		<param name="crop_min_z" value="-0.5"/>
 		<param name="crop_max_x" value="2.2"/>
-		<param name="crop_max_y" value="0.0"/>
+		<param name="crop_max_y" value="0.99"/>
 		<param name="crop_max_z" value="10.0"/>
 	</node>
 
@@ -32,16 +32,16 @@
 		<param name="distance_above_plane" value="0.005"/>
 
 		<!-- Euclidean Cluster Params -->
-		<param name="cluster_tolerance" value="1.0"/>
-		<param name="min_cluster_size" value="10"/>
-		<param name="max_cluster_size" value="10000"/>
+		<param name="cluster_tolerance" value="0.4"/>
+		<param name="min_cluster_size" value="30.0"/>
+		<param name="max_cluster_size" value="10000.0"/>
 	</node>
 
 	<!-- Statistical Outlier Remover Node -->
-	<node name="StatRemover" pkg="perception" type="stat_remove" output="screen">
+	<!--node name="StatRemover" pkg="perception" type="stat_remove" output="screen">
 		<param name="mean_k" value="50"/>
 		<param name="std_dev_multiplier_thresh" value="2.5"/>
-	</node>
+	</node-->
 
 	<!-- Classifier Node -->
 	<node name="Classifier" pkg="perception" type="classify" output="screen">
@@ -49,7 +49,11 @@
 		<param name="epsilon_angle" value="5.0"/>
 		<param name="curvature_threshold" value="1.0"/>
 		<param name="plane_radius" value="0.1"/>
-		<param name="new_object_threshold" value="0.02"/>
+		<param name="size_weight" value="0.2"/>
+		<param name="esf_weight" value="0.2"/>
+		<param name="lower_activation_threshold" value="20.0"/>
+		<param name="upper_activation_threshold" value="150.0"/>
+		<param name="object" value="0"/>
 	</node>
 
 	<!-- Perception Visualization Node-->

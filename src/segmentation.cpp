@@ -19,6 +19,11 @@
 // tf Transform
 #include "tf/transform_broadcaster.h"
 
+// Custom Messages
+#include "perception/vector.h"
+#include "perception/indices.h"
+#include "perception/PointCloudArray.h"
+
 typedef pcl::PointXYZRGB PointC;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudC;
 
@@ -33,13 +38,14 @@ int main(int argc, char** argv) {
 
 	ros::Publisher table_pub = nh.advertise<sensor_msgs::PointCloud2>("table_cloud", 1);
 	ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visual_marker", 1);
-	ros::Publisher object_pub = nh.advertise<sensor_msgs::PointCloud2>("clustered_objects", 1);
+	ros::Publisher object_pub = nh.advertise<perception::PointCloudArray>("clustered_objects", 1);
+	ros::Publisher object_indices_pub = nh.advertise<perception::indices>("object_indices", 1);
 
 	bool RGB;
 	ros::param::get("/perception/RGB", RGB);
 
 	if(RGB){
-		perception::Segmenter<PointC> segmenter(table_pub, marker_pub, object_pub);
+		perception::Segmenter<PointC> segmenter(table_pub, marker_pub, object_pub, object_indices_pub);
 
 		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
 						&perception::Segmenter<PointC>::Callback, &segmenter);
@@ -48,7 +54,7 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 	else{
-		perception::Segmenter<PointI> segmenter(table_pub, marker_pub, object_pub);
+		perception::Segmenter<PointI> segmenter(table_pub, marker_pub, object_pub, object_indices_pub);
 
 		ros::Subscriber sub = nh.subscribe("downsampled_cloud", 1,
 						&perception::Segmenter<PointI>::Callback, &segmenter);
@@ -63,10 +69,12 @@ namespace perception {
 	template <class T>
 	Segmenter<T>::Segmenter(const ros::Publisher& table_pub, 
 						 const ros::Publisher& marker_pub,
-						 const ros::Publisher& object_pub)
+						 const ros::Publisher& object_pub,
+						 const ros::Publisher& object_indices_pub)
 		: table_pub_(table_pub), 
 		  marker_pub_(marker_pub),
-		  object_pub_(object_pub) {
+		  object_pub_(object_pub),
+		  object_indices_pub_(object_indices_pub) {
 
 		f = boost::bind(&perception::Segmenter<T>::paramsCallback, this, _1, _2);
 		server.setCallback(f); 
@@ -245,18 +253,34 @@ namespace perception {
 		Eigen::Vector4f min_pt, max_pt;
 		pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
-		pose->position.x = (max_pt.z() + min_pt.z()) / 2;
-		pose->position.y = -(max_pt.x() + min_pt.x()) / 2;
-		pose->position.z = -(max_pt.y() + min_pt.y()) / 2;
+		if(RGB) {
+			pose->position.x = (max_pt.z() + min_pt.z()) / 2;
+			pose->position.y = -(max_pt.x() + min_pt.x()) / 2;
+			pose->position.z = -(max_pt.y() + min_pt.y()) / 2;
 
-		//pose->orientation.x = 0.5;
-		//pose->orientation.y = -0.5;
-		//pose->orientation.z = 0.5;
-		pose->orientation.w = 1.0;
+			//pose->orientation.x = 0.5;
+			//pose->orientation.y = -0.5;
+			//pose->orientation.z = 0.5;
+			pose->orientation.w = 1.0;
 
-		scale->x = max_pt.z() - min_pt.z();
-		scale->y = max_pt.x() - min_pt.x();
-		scale->z = max_pt.y() - min_pt.y();
+			scale->x = max_pt.z() - min_pt.z();
+			scale->y = max_pt.x() - min_pt.x();
+			scale->z = max_pt.y() - min_pt.y();
+		}
+		else {
+			pose->position.x = (max_pt.x() + min_pt.x()) / 2;
+			pose->position.y = (max_pt.y() + min_pt.y()) / 2;
+			pose->position.z = (max_pt.z() + min_pt.z()) / 2;
+
+			//pose->orientation.x = 0.5;
+			//pose->orientation.y = -0.5;
+			//pose->orientation.z = 0.5;
+			pose->orientation.w = 1.0;
+
+			scale->x = max_pt.x() - min_pt.x();
+			scale->y = max_pt.y() - min_pt.y();
+			scale->z = max_pt.z() - min_pt.z();
+		}
 
 		//ROS_INFO("Position: %f %f %f", min_pt.x(), min_pt.y(), min_pt.z());
 		//ROS_INFO("Pose: %f %f %f", pose->position.x, pose->position.y, pose->position.z);
@@ -324,6 +348,77 @@ namespace perception {
 	}
 
 	template <class T>
+	void Segmenter<T>::SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud_in,
+									   typename pcl::PointCloud<T>::Ptr cloud_out) {
+		// TO-DO: put this into separate function
+		// Share with segment clusters below
+		ros::param::get("cluster_tolerance", cluster_tolerance);
+		ros::param::get("min_cluster_size", min_cluster_size);
+		ros::param::get("max_cluster_size", max_cluster_size);
+
+		int size = cloud_in->points.size();
+
+		if (size == 0) {
+			ROS_INFO("Warning: Cluster Cloud Non existent");
+			return;
+		}
+		else if (size < min_cluster_size) {
+			ROS_INFO("Warning: Cluster Cloud less than min cluster size");
+			return;
+		}
+		else if (size > max_cluster_size) {
+			ROS_INFO("Warning: Cluster Cloud more than max cluster size");
+			return;
+		}
+
+		typename pcl::search::KdTree<T>::Ptr tree(new pcl::search::KdTree<T>());
+		std::vector<pcl::PointIndices> cluster_indices;
+
+		pcl::EuclideanClusterExtraction<T> clustering;
+		clustering.setInputCloud(cloud_in);
+		clustering.setClusterTolerance(cluster_tolerance);
+		clustering.setMinClusterSize(min_cluster_size);
+		clustering.setMaxClusterSize(max_cluster_size);
+		clustering.setSearchMethod(tree);
+		clustering.extract(cluster_indices);
+
+		int currentClusterNum = 0;
+		for (std::vector<pcl::PointIndices>::const_iterator i = cluster_indices.begin(); i != cluster_indices.end(); i++) {
+			typename pcl::PointCloud<T>::Ptr cluster(new pcl::PointCloud<T>());
+
+			for (std::vector<int>::const_iterator point = i->indices.begin(); point != i->indices.end(); point++) {
+				cluster->points.push_back(cloud_in->points[*point]);
+			}
+
+			cluster->width = cluster->points.size();
+			cluster->height = 1;
+			cluster->is_dense = true;
+
+			if (cluster->points.size() <= 0) break;
+
+			//ROS_INFO("Cluster Point Cloud: %ld", cluster->points.size());
+
+			perception::PointCloudArray clusterArray;
+
+			if(RGB) clusterArray.header.frame_id = "camera_link";
+			else clusterArray.header.frame_id = "velodyne";
+
+			clusterArray.ns = "perception";
+			clusterArray.id = currentClusterNum;
+
+			sensor_msgs::PointCloud2 cluster_out;
+			pcl::toROSMsg(*cluster, cluster_out);
+
+			clusterArray.cluster = cluster_out;
+
+			currentClusterNum++;
+			object_pub_.publish(clusterArray);
+		}
+
+		ROS_INFO("Segmenter found %ld objects", cluster_indices.size());
+	}
+
+	template <class T>
 	void Segmenter<T>::SegmentClusters(typename pcl::PointCloud<T>::Ptr cloud, pcl::PointIndices::Ptr indices,
 									typename pcl::PointCloud<T>::Ptr object_cloud) {
 
@@ -370,11 +465,30 @@ namespace perception {
 		clustering.setSearchMethod(tree);
 		clustering.extract(cluster_indices);
 
+		// Publish object indices
+
+		//perception_msgs::vector indices_out;
+		//pcl_conversions::moveFromPCL(cluster_indices, indices_out);
+
+		//if(RGB) indices_out.header.frame_id = "camera_link";
+		//else indices_out.header.frame_id = "velodyne";
+
+		//object_indices_pub_.publish(indices_out);
+
 		//ROS_INFO("Cluster Indices: %ld", cluster_indices.size());
 
-		int currentClusterNum = 1;
+		int currentClusterNum = 0;
 		for (std::vector<pcl::PointIndices>::const_iterator i = cluster_indices.begin(); i != cluster_indices.end(); i++) {
 			typename pcl::PointCloud<T>::Ptr cluster(new pcl::PointCloud<T>());
+
+			//indices_out.ns = "perception";
+			//indices_out.id = currentClusterNum;
+
+			//vector_out.ns = "perception";
+			//vector_out.id = currentClusterNum;
+
+			//vector_out.vector.push_back(*i);
+			//object_indices_pub_.publish(indices_out);
 
 			for (std::vector<int>::const_iterator point = i->indices.begin(); point != i->indices.end(); point++) {
 				cluster->points.push_back(object_cloud->points[*point]);
@@ -388,8 +502,22 @@ namespace perception {
 
 			//ROS_INFO("Cluster Point Cloud: %ld", cluster->points.size());
 
-			*clustered_cloud += *cluster;
+			perception::PointCloudArray clusterArray;
+
+			if(RGB) clusterArray.header.frame_id = "camera_link";
+			else clusterArray.header.frame_id = "velodyne";
+
+			clusterArray.ns = "perception";
+			clusterArray.id = currentClusterNum;
+
+			sensor_msgs::PointCloud2 cluster_out;
+			pcl::toROSMsg(*cluster, cluster_out);
+
+			clusterArray.cluster = cluster_out;
+
+			//*clustered_cloud += *cluster;
 			currentClusterNum++;
+			object_pub_.publish(clusterArray);
 
 			// visualization_msgs::Marker object_marker;
 			// object_marker.ns = "objects";
@@ -398,13 +526,39 @@ namespace perception {
 			// object_marker.type = visualization_msgs::Marker::CUBE;
 		}
 
+		perception::indices indices_out;
+
+		for(int i = 0; i < cluster_indices.size(); i++) {
+			pcl::PointIndices::Ptr indices(new pcl::PointIndices);
+			//*indices = cluster_indices[i];
+			indices->indices = cluster_indices[i].indices;
+
+			indices_out.ns = "perception";
+			indices_out.id = currentClusterNum;
+			indices_out.id = cluster_indices.size();
+
+			//ROS_INFO("%ld", indices);
+
+			indices_out.indices.push_back(indices->indices[i]);
+			currentClusterNum++;
+
+			if(RGB) indices_out.header.frame_id = "camera_link";
+			else indices_out.header.frame_id = "velodyne";
+			
+			object_indices_pub_.publish(indices_out);
+		}
+
+		//object_indices_pub_.publish(vector_out);
+
+		// Publish Object Point Clouds
+
 		sensor_msgs::PointCloud2 msg_out;
 		pcl::toROSMsg(*clustered_cloud, msg_out);
 
 		if(RGB) msg_out.header.frame_id = "camera_link";
 		else msg_out.header.frame_id = "velodyne";
 
-		object_pub_.publish(msg_out);
+		//object_pub_.publish(msg_out);
 
 		this->GetObjectMarkers(object_cloud, cluster_indices);
 
@@ -456,7 +610,8 @@ namespace perception {
 		}
 */
 
-		//ROS_INFO("Found %ld objects", object_indices.size());
+		ROS_INFO("Segmenter found %ld objects", cluster_indices.size());
+		//ROS_INFO("-----------------------------------------");
 		//ROS_INFO("There are %ld points above the table", above_surface_indices->indices.size());
 	}
 
@@ -526,18 +681,24 @@ namespace perception {
 
 		ros::param::get("/perception/RGB", RGB);
 
-		//this->SegmentSurfaceFromNormals(cloud, cloud_normals, table_inliers, subset_cloud);
-		//this->SegmentSurfaceFromPerpendicular(cloud, table_inliers, subset_cloud);
-
 		std::vector<pcl::PointIndices> object_indices;
 		typename pcl::PointCloud<T>::Ptr object_cloud(new pcl::PointCloud<T>());
+
+		if(RGB) {
+			this->SegmentSurfaceFromPerpendicular(cloud, table_inliers, subset_cloud);
+			this->SegmentClusters(cloud, table_inliers, object_cloud);
+		}
+		else {
+			this->SegmentClusters(cloud, object_cloud);
+		}
+
+		//this->SegmentSurfaceFromNormals(cloud, cloud_normals, table_inliers, subset_cloud);
 
 		//ROS_INFO("Point Cloud Normals: %ld ", cloud_normals->points.size());
 		//ROS_INFO("Table Inliers: %ld ", table_inliers->indices.size());
 		//ROS_INFO("Subset Cloud: %ld ", subset_cloud->size());
 
 		//this->SegmentCylinder(cloud, cloud_normals, table_inliers, object_cloud);
-		this->SegmentClusters(cloud, table_inliers, object_cloud);
 /*
 		pcl::ExtractIndices<PointC> extract;
 		extract.setInputCloud(cloud);
